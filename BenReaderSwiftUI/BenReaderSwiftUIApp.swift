@@ -12,7 +12,7 @@ import SwiftData
 struct BenReaderSwiftUIApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
-            Item.self,
+            Book.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
@@ -25,7 +25,7 @@ struct BenReaderSwiftUIApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SelectionView()
         }
         .modelContainer(sharedModelContainer)
     }
