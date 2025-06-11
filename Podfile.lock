@@ -1,0 +1,20 @@
+PODS:
+  - SSZipArchive (2.6.0)
+  - SWXMLHash (7.0.2)
+
+DEPENDENCIES:
+  - SSZipArchive
+  - SWXMLHash
+
+SPEC REPOS:
+  trunk:
+    - SSZipArchive
+    - SWXMLHash
+
+SPEC CHECKSUMS:
+  SSZipArchive: 8a6ee5677c8e304bebc109e39cf0da91ccef22ea
+  SWXMLHash: dd733a457e9c4fe93b1538654057aefae4acb382
+
+PODFILE CHECKSUM: b137cb3f604e8d1e1637ef7efa873df2e3e353b6
+
+COCOAPODS: 1.16.2
