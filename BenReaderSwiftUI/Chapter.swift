@@ -11,11 +11,33 @@ public class Chapter {
     
     var startTime: TimeInterval;
     var endTime: TimeInterval;
-    
+    var title: String;
+    var paragraphTimes: [TimeInterval];
+    var chapterPath: String;
     
     init() {
         self.startTime = TimeInterval(0)
         self.endTime = TimeInterval(1)
+        self.title = "Default title"
+        self.paragraphTimes = []
+        self.chapterPath = ""
+    }
+    
+    init(chapterTitle: String, startTime: TimeInterval, endTime: TimeInterval, paragraphs: [TimeInterval], chapterPath: String) {
+        self.startTime = startTime;
+        self.endTime = endTime;
+        self.paragraphTimes = paragraphs;
+        self.title = chapterTitle;
+        self.chapterPath = chapterPath
+        
+    }
+    
+    init(title: String, startTime: String, endTime: String) {
+        self.startTime = TimeInterval(Utils.parseDate(startTime) ?? 0)
+        self.endTime = TimeInterval(Utils.parseDate(endTime) ?? 1)
+        self.title = title;
+        self.paragraphTimes = []
+        self.chapterPath = ""
     }
     
     

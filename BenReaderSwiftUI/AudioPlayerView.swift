@@ -7,11 +7,54 @@
 
 
 import SwiftUI
+import AVFAudio
+import MediaPlayer
 
 struct AudioPlayerView: View {
     
     @State var isPlaying: Bool = true;
-    @State var progress = 0.0
+    @State var progress: Double = 0.0
+    @State var currentChapter: Chapter;
+    @State var remainingDuration: Double = 0.0;
+    @State var showChapters: Bool = false;
+    @State var showSpeeds: Bool = false;
+    @State var showTimers: Bool = false;
+    
+    @State var timerValue: TimeInterval?;
+    
+    @ObservedObject var player = AudioManager.shared;
+    
+    let timings: [Int] = [0, 8, 15, 30, 45, 60]
+    
+    var minValue: Double = 0.0;
+    var maxValue: Double = 1.0;
+    var formatter: DateComponentsFormatter;
+    var otherFormatter: DateComponentsFormatter;
+    @ObservedObject var book: Book;
+    @State var timeObserver: Any?;
+    
+    
+    init(book: Book) {
+        self.book = book;
+        
+        self.currentChapter = Chapter(title: "Chapter 1", startTime: "c 0:00:00".replacingOccurrences(of: "c ", with: ""), endTime: "c 0:28:20.825000".replacingOccurrences(of: "c ", with: ""));
+        
+        self.formatter = DateComponentsFormatter();
+        self.otherFormatter = DateComponentsFormatter();
+        self.minValue = currentChapter.startTime;
+        self.maxValue = currentChapter.endTime;
+               
+        
+        formatter.allowedUnits = [ .minute, .second, .nanosecond]
+         formatter.unitsStyle = .positional
+         formatter.zeroFormattingBehavior = .pad
+        
+        otherFormatter.allowedUnits = [ .hour, .minute];
+        otherFormatter.unitsStyle = .abbreviated;
+        otherFormatter.zeroFormattingBehavior = .default;
+        
+        
+    }
     
     var body: some View {
         
@@ -20,31 +63,86 @@ struct AudioPlayerView: View {
                 
                 Spacer()
                 
+                    if let timerSeconds = player.timerValue {
+                        HStack {
+                            Spacer()
+                            Text("Sleep Timer: \(formatter.string(from: .init(TimeInterval(timerSeconds - progress))) ?? "0 s")")
+                            Spacer()
+                        }
+                    }
+                
+                Spacer()
+                
+               
                 
                 // MARK: - Cover Image
                 
-                Image("default_cover")
-                    .resizable()
+                AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(book.image)) { image in
+                    image.resizable()
+                } placeholder: {
+                    Image("default_cover").resizable().opacity(0)
+                }
                     .scaledToFit()
                     .containerRelativeFrame(.horizontal, count: 2, span: 1, spacing: 0.0)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .shadow(radius: 5)
+                    .shadow(color: .secondary.opacity(0.5), radius: 5)
                 
                 
+                Spacer()
                 
+                Button(action: {
+                    showChapters.toggle()
+                }) {
+                    Label {
+                        Text("\($currentChapter.title.wrappedValue)")
+                    } icon: {
+                        Image(systemName: "list.bullet")
+                    }
+                }.buttonStyle(.plain)
+                    .sheet(isPresented: $showChapters) {
+                        
+                        ScrollView {
+                            VStack {
+                                ForEach(0..<player.chapters.count, id: \.self) { chapter in
+                                
+                                    Button(action: {
+                                        player.player?.seek(to: .init(seconds: player.chapters[chapter].startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero);
+                                    player.play()
+                                    showChapters = false;
+                                    
+                                }) {
+                                    
+                                    Text("\(player.chapters[chapter].title)")
+                                    Spacer()
+                                    Text("\(self.otherFormatter.string(from: .init(player.chapters[chapter].endTime - player.chapters[chapter].startTime)) ?? "")").foregroundStyle(.secondary)
+                                }.buttonStyle(.plain).padding()
+                                Divider()
+                            }
+                        }
+                    }
+                }
                 
                 Spacer()
                 
                 // MARK: - Progress Bar
                 
-                Slider(value: $progress, in: 0...1) .padding([.leading, .trailing], 50).controlSize(.small)
+            
+                
+                Slider(value: $progress, in: $currentChapter.startTime.wrappedValue...$currentChapter.endTime.wrappedValue, onEditingChanged: {
+                    (scrubStarted) in
+                    if scrubStarted {
+                        self.player.scrubState = .scrubStarted
+                    } else {
+                        self.player.scrubState = .scrubEnded(progress)
+                    }
+                }) .padding([.leading, .trailing], 50).shadow(color: .secondary, radius: 5).controlSize(.small).tint(.primary)
                 
                 HStack {
-                    Text("Min")
+                    Text("\(formatter.string(from: $progress.wrappedValue - $currentChapter.startTime.wrappedValue) ?? "unable to parse")")
                     Spacer()
-                    Text("\(progress)");
+                    Text("\(otherFormatter.string(from: TimeInterval($remainingDuration.wrappedValue)) ?? "Unable to Parse") left");
                     Spacer()
-                    Text("Max")
+                    Text("- \(formatter.string(from: $currentChapter.endTime.wrappedValue - $progress.wrappedValue) ?? "unable to parse")")
                 }.padding([.leading, .trailing], 50);
                 
                 HStack {
@@ -52,17 +150,23 @@ struct AudioPlayerView: View {
                 }
                 
                 
+                Spacer()
                 // MARK: - Audio Buttons
                 
                 HStack {
-                    Button(action: {}) {
+                    Button(action: {
+                        player.prevChapter()
+                    }) {
                         Label {
                         } icon: {
-                            Image(systemName: "backward.end").resizable().scaledToFit().frame(width: 50)
+                            Image(systemName: "backward.end").resizable().scaledToFit().frame(width: 40)
                         }
                     }.buttonStyle(.plain).padding(.leading, 50)
                     
-                    Button(action: {}) {
+                    Button(action: {
+                        
+                        player.skip(-30);
+                    }) {
                         Label {
                         } icon: {
                             Image(systemName: "gobackward.30").resizable().scaledToFit().frame(width:50)
@@ -70,48 +174,229 @@ struct AudioPlayerView: View {
                     }.buttonStyle(.plain).padding()
                     
                     Button(action: {
-                        self.isPlaying.toggle() ;
+                        player.togglePlayer()
+                        isPlaying = player.getIsPlaying();
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: isPlaying ? "play.circle.fill" :  "pause.circle.fill").resizable().scaledToFit().frame(width: 80)
+                            Image(systemName: isPlaying ? "pause.circle.fill" :  "play.circle.fill").resizable().scaledToFit().frame(width: 80)
                         }
                     }.buttonStyle(.plain).padding()
                     
-                    Button(action: {}) {
+                    Button(action: {
+                        
+                        player.skip(30);
+                        
+                    }) {
                         Label {
                         } icon: {
                             Image(systemName: "goforward.30").resizable().scaledToFit().frame(width: 50)
                         }
                     }.buttonStyle(.plain).padding()
-                    Button(action: {}) {
+                    Button(action: {
+                        player.nextChapter()
+                    }) {
                         Label {
                         } icon: {
-                            Image(systemName: "forward.end").resizable().scaledToFit().frame(width: 50)
+                            Image(systemName: "forward.end").resizable().scaledToFit().frame(width: 40)
                         }
                     }.buttonStyle(.plain).padding(.trailing, 50)
                 }
                 
                 
                 // MARK: - Bottom Row of Buttons
-                
-                Button {
+                HStack {
                     
-                } label: {
-                    Label("Howdy", systemImage: "person.circle.fill");
+                    Spacer()
+                    Button (action: {
+                        showSpeeds.toggle()
+                    }) {
+                        VStack {
+                            Image(systemName:"hare.fill")
+                            Text("Speed")
+                        }
+                    }.buttonStyle(.plain).padding()
+                        .sheet(isPresented: $showSpeeds) {
+                            
+                            ScrollView {
+                                VStack {
+                                    ForEach(5...30, id: \.self) { speed in
+
+                                        Button(action: {
+                                            if let audioPlayer = player.player {
+                                                audioPlayer.rate = Float(speed) / 10.0
+                                            } else {
+                                                
+                                            }
+                                            showSpeeds = false;
+                                        
+                                    }) {
+                                        
+                                        Text("\(String(format: "%.1f", Double(speed) / 10.0))x")
+                                        Spacer()
+                                        Text("Speed").foregroundStyle(.secondary)
+                                        
+                                    }.buttonStyle(.plain).padding()
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                    
+                    
+                    Spacer()
+                    
+                    Button (action: {
+                        showTimers.toggle()
+                    }) {
+                        VStack {
+                            Image(systemName:"timer")
+                            Text("Timer")
+                        }
+                    }.buttonStyle(.plain).padding()
+                        .sheet(isPresented: $showTimers) {
+                            
+                            ScrollView {
+                                VStack {
+                                    ForEach(0...12, id: \.self) { time in
+//
+                                        Button(action: {
+                                            if(time != 0) {
+                                                if let audioPlayer = player.player {
+                                                    if(time == 1) {
+                                                        
+                                                        player.timerValue = TimeInterval(audioPlayer.currentTime().seconds + 10.0)
+                                                    } else {
+                                                        player.timerValue = TimeInterval(audioPlayer.currentTime().seconds + Double(time) * 60.0 * 10.0)
+                                                    }
+                                                } else {
+                                                }
+                                            } else {
+                                                player.timerValue = nil
+                                            }
+                                        player.play()
+                                        showTimers = false;
+                                        
+                                    }) {
+                                        
+                                        Text("\(time == 0 ? "Off" : "\(time * 10) minutes")")
+                                        Spacer()
+                                        
+                                    }.buttonStyle(.plain).padding()
+                                    Divider()
+                                }
+                            }
+                        }
+                    }
+                    
+                    Spacer()
                 }
-                
             }
             
             // MARK: - Navigation Title
             
-            .navigationTitle(Text("Title of Book")).navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(Text("\(book.title)")).navigationBarTitleDisplayMode(.inline)
+           
+            .background {
+                AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(book.image)) { image in
+                    image.resizable()
+                } placeholder: {
+                    Image("default_cover").resizable().opacity(0)
+                }.scaledToFit().blur(radius: 80).opacity(0.9)
+            }
+            .tint(.primary)
+        }
+        .onAppear {
+            
+            setupRemoteControls()
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default);
+                try AVAudioSession.sharedInstance().setActive(true);
+            } catch {
+                print(error)
+            }
+            
+            if(timeObserver == nil) {
+                addPeriodicTimeObserver()
+            }
             
         }
+        .onDisappear() {
+        }
+    }
+    
+    func addPeriodicTimeObserver() {
+        // Invoke callback every half second
+        let interval = CMTime(seconds: 0.1,
+                              preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        // Add time observer. Invoke closure on the main queue.
+        timeObserver =
+        player.player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) {
+                 time in
+            switch(player.scrubState) {
+                case .reset:
+                    progress = time.seconds
+                    break;
+                case .scrubStarted:
+                    break;
+                case .scrubEnded(_):
+                    break;
+            }
+            if let playerSecs = player.player?.currentItem?.duration.seconds {
+                if(playerSecs.isNaN) {
+                    remainingDuration = 0
+                } else {
+                    remainingDuration = playerSecs - time.seconds
+                }
+            } else {
+                remainingDuration = 0
+            }
+            player.trackUpdate();
+            isPlaying = player.getIsPlaying()
+            book.location = time.seconds
+            currentChapter = player.currentChapter ?? self.currentChapter
+            
+        }
+    }
+    
+    
+    
+    private func setupRemoteControls() {
+        player.play(book: book);
+        self.currentChapter = player.currentChapter ?? self.currentChapter
+        
+        
+        
+        let commands = MPRemoteCommandCenter.shared();
+        commands.pauseCommand.addTarget { _ in
+            player.pause();
+            return .success
+        }
+        
+        commands.playCommand.addTarget { _ in
+            player.play()
+            return .success
+        }
+        commands.nextTrackCommand.addTarget { _ in
+            player.nextChapter()
+            return .success
+        }
+        commands.previousTrackCommand.addTarget { _ in
+            player.prevChapter()
+            return .success
+        }
+       
+        
+        
+        
         
     }
+    func updateAllInfo() {
+        
+    }
+    
 }
 
 #Preview {
-    AudioPlayerView()
+    AudioPlayerView(book: Book())
 }

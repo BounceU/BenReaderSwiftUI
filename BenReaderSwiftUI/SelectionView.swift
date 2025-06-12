@@ -12,8 +12,8 @@ struct SelectionView: View {
     
     @Environment(\.modelContext) var modelContext
     @Query(sort: \Book.lastOpened, order: .reverse) var books: [Book];
-    @State private var showFileImporter = false
-    @State private var selectedFileUrl: URL?
+    @State private var showFileImporter: Bool = false
+    @State var selectedFileUrl: URL?
     
     var columns: [GridItem] = [
         GridItem(.flexible()),
@@ -28,7 +28,7 @@ struct SelectionView: View {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(books) { book in
                         
-                        NavigationLink(destination: CardView(book: book)) {
+                        NavigationLink(destination: AudioPlayerView(book: book).tint(.primary)) {
                             CardView(book: book)
                                 .simultaneousGesture(TapGesture().onEnded {
                                     withAnimation {
@@ -77,21 +77,31 @@ struct SelectionView: View {
                     Button {
                         showFileImporter = true;
                     } label: {
-                        Label("Add Item", systemImage: "plus")
+                        Label("Add Item", systemImage: (selectedFileUrl != nil) ? "progress.indicator" : "plus" ).onChange(of: selectedFileUrl) { oldVal, newVal in
+                            if(newVal == nil) {
+                                
+                            } else {
+                                addBook()
+                            }
+                        }
                     }
                             
                 }
-            }
+            }.tint(.primary)
             
         }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.zip], allowsMultipleSelection: false) { result in
                         switch result {
                         case .success(let urls):
+                            
+                           
                             if let firstUrl = urls.first {
-                                selectedFileUrl = firstUrl
-                                print("Selected file URL: \(firstUrl)")
                                 
-                                addBook(url: firstUrl);
+                                
+                                selectedFileUrl = firstUrl
+                               
+                                //addBook(url: firstUrl);
+                              
                             }
                         case .failure(let error):
                             print("Error importing file: \(error.localizedDescription)")
@@ -122,12 +132,12 @@ struct SelectionView: View {
 
     }
     
-    func addBook(url: URL) {
-        
+    func addBook() {
+        let url = selectedFileUrl!
         if let newBook = getStuffFromUser(url: url) {
-            
             withAnimation {
                 modelContext.insert(newBook)
+                selectedFileUrl = nil;
             }
         } else {
             print("Couldn't add book");
@@ -136,16 +146,16 @@ struct SelectionView: View {
     }
     
     func removeBook(_ book: Book) {
+        //Remove folder
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
+        let epubURL = documentsDirectory.appendingPathComponent("/\(book.fileName)");
+        do {
+            try FileManager.default.removeItem(at: epubURL);
+        } catch {
+            print("Couldn't remove book");
+        }
+        
         withAnimation {
-            //Remove folder
-            let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
-            let epubURL = documentsDirectory.appendingPathComponent("/\(book.fileName)");
-            do {
-                try FileManager.default.removeItem(at: epubURL);
-            } catch {
-                print("Couldn't remove book");
-            }
-            
             // Remove book from defaults
             modelContext.delete(book);
             

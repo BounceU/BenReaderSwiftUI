@@ -10,6 +10,84 @@ import Foundation
 
 public class Utils {
     
+    
+    // MARK: - Get Chapters
+    static func loadChaptersFromBook(_ book: Book, ) -> [Chapter] {
+        
+        let timeStampPath = getTimestampURL(book.fileName)!
+        
+        guard let fileData = try? String(contentsOfFile: timeStampPath.path(), encoding: .ascii) else {
+            return []
+        }
+        
+        let lines = fileData.isEmpty ? [] : fileData.split(separator: "\r\n")
+        
+        
+        var chapters: [Chapter] = []
+        
+        
+        var paragraphs: [TimeInterval] = []
+        var chapterTimes: [TimeInterval] = []
+        
+        // MARK: - Load all lines
+        for line in lines {
+            let useLine = line.replacingOccurrences(of: "\n", with: "");
+            if useLine.contains("p ") {
+                let timeString = useLine.replacingOccurrences(of: "p ", with: "");
+                if let timestamp = Utils.parseDate(String(timeString)) {
+                    paragraphs.append(timestamp)
+                } else {
+                   // print("Couldn't parse timestamp: \(timeString)")
+                }
+            } else if useLine.contains("c ") {
+                let timeString = useLine.replacingOccurrences(of: "c ", with: "");
+                if let timestamp = Utils.parseDate(String(timeString)) {
+                    chapterTimes.append(timestamp)
+                } else {
+               //     print("Couldn't parse timestamp: \(timeString)")
+                }
+            } else {
+                print("Line not conforming to specification");
+            }
+        }
+        
+        
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
+        let epubParser = EpubParser(epubDirectory: documentsDirectory.appendingPathComponent("\(book.fileName)/"));
+        epubParser.initializeData();
+        
+        // MARK: - Create chapters from lines
+        for i in 0..<chapterTimes.count {
+            let startTime = chapterTimes[i];
+            let endTime = i == chapterTimes.count - 1 ? paragraphs.last! : chapterTimes[i + 1];
+            
+            var chapterParagraphs: [TimeInterval] = []
+            
+            for paragraph in paragraphs {
+                if(paragraph > endTime) {
+                    break;
+                }
+                if(paragraph > startTime) {
+                    chapterParagraphs.append(paragraph);
+                }
+            }
+            
+            let newChapter = Chapter(chapterTitle: i >= epubParser.chapterTitles.count ? "" : epubParser.chapterTitles[i], startTime: startTime, endTime: endTime, paragraphs: chapterParagraphs, chapterPath: i >= epubParser.chapterPaths.count ? "" : epubParser.chapterPaths[i])
+            chapters.append(newChapter);
+            
+            
+        }
+        
+        
+        
+        
+        
+        
+        
+        return chapters
+    }
+    
+    
     // MARK: - Audio URL
 
     static func getAudioURL(_ bookName: String) -> URL? {
@@ -56,13 +134,7 @@ public class Utils {
             return nil;
         }
         
-//        guard let fileURLs = try? FileManager.default.contentsOfDirectory(at: documentsDirectory.appendingPathComponent("\(bookName)/"), includingPropertiesForKeys: nil, options: []) else {
-//            print("Error: Could not get book directory URL");
-//            return nil;
-//        }
-        
         for fileURL in enumerator.allObjects as! [URL] {
-           // print("url: \(fileURL)");
             if fileURL.deletingPathExtension().lastPathComponent == "cover" {
                 
                 return fileURL.relativePath(from: documentsDirectory) ?? nil
@@ -78,19 +150,24 @@ public class Utils {
     
     static func processSelectedFile(url: URL, books: [Book]) -> Book? {
         
+        print("given URL: \(url)");
+        
         if url.pathExtension != "zip" {
             return nil
         }
         
         let epubName = (url.lastPathComponent as NSString).deletingPathExtension;
-        
+        print("EPUB name: \(epubName)");
         for b in books {
-            if b.title == epubName {
+            if b.fileName == epubName {
                 return nil;
             }
         }
         
+        print("Okay, the url is \(url)")
+        
         UnzipHelper.unzipZip(zipURL: url) { unzipDirectory in
+            print("unzipped directory: \(String(describing: unzipDirectory))");
             guard let _ = unzipDirectory else {
                 print("error unizzping file");
                 return;
@@ -103,21 +180,39 @@ public class Utils {
                         print("error unizzping epub after unzipping zip.");
                         return;
                     }
+                    
+                    
                 }
             }
         }
         
         // Got through successfully
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
-        let epubURL = documentsDirectory.appendingPathComponent("\(epubName)/\(epubName).epub");
-        let epubParser = EpubParser(epubDirectory: documentsDirectory.appendingPathComponent("\(epubName)/"));
-        epubParser.parseEpub(chapterNumber: 3) { url in
-            print("url: \(url)");
-        }
-        return Book(fileName: "\(epubName)");
+        
+        let newBook = Book(fileName: "\(epubName)");
+        let parser = getChapterInfo(book: newBook);
+        newBook.title = parser.title;
+        newBook.author = parser.author;
+        
+//        epubParser.parseEpub(chapterNumber: 3) { url in
+//            print("url: \(url)");
+//        }
+        
+        
+        
+        return newBook;
         
         
     }
+    
+    static func getChapterInfo(book: Book) -> EpubParser {
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
+        let epubParser = EpubParser(epubDirectory: documentsDirectory.appendingPathComponent("\(book.fileName)/"));
+        epubParser.initializeData();
+        return epubParser;
+    }
+    
+    
     
     // MARK: - Date Stuff
     

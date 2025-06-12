@@ -10,7 +10,7 @@ import SwiftUI
 import SwiftData
 
 @Model
-final class Book {
+final class Book: ObservableObject {
     
     var title: String;
     var author: String;

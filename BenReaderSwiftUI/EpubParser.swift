@@ -1,6 +1,6 @@
 //
 //  EpubParser.swift
-//  BenReader
+//  BenReaderSwiftUI
 //
 //  Created by Ben Liebkemann on 5/29/25.
 //
@@ -19,8 +19,75 @@ class EpubParser: NSObject, XMLParserDelegate {
     private var currentAttributes: [String: String] = [:];
     private var opfFilePath: String = "";
     
+    var title: String = "";
+    var author: String = "";
+    var chapterTitles: [String] = [];
+    var chapterPaths: [String] = [];
+    
     init(epubDirectory: URL) {
         self.unzipDirectory = epubDirectory;
+    }
+    
+    func initializeData() {
+        let containerXMLPath = unzipDirectory.appendingPathComponent("META-INF/container.xml").path;
+        if let containerXMLData = FileManager.default.contents(atPath: containerXMLPath) {
+            
+            
+            let xml = XMLHash.parse(containerXMLData);
+            
+            if let rootfilePath = xml["container"]["rootfiles"]["rootfile"].element?.attribute(by: "full-path")?.text {
+                let opfURL = unzipDirectory.appendingPathComponent(rootfilePath);
+                
+                // Get Author and Title from content.opf
+                if let xmlDat = try? XMLHash.parse(Data(contentsOf: opfURL)) {
+            
+                    self.author = xmlDat["package"]["metadata"]["dc:creator"].element?.text ?? "";
+                    self.title = xmlDat["package"]["metadata"]["dc:title"].element?.text ?? "Default title"
+                    
+                } else {
+                    print("Error: Could not get data from OPF for author and title")
+                }
+                
+                // Get spine item paths from content.opf
+                if let opfParser = XMLParser(contentsOf: opfURL) {
+                    opfParser.delegate = self;
+                    
+                    opfParser.parse();
+                    
+                    for i in 0..<spineItems.count {
+                        if let chapterPath = manifestItems[spineItems[i]] {
+                            let chapterFullPath = "\(chapterPath)";
+                            self.chapterPaths.append(chapterFullPath);
+                        }
+                        
+                    }
+                    
+                } else {
+                    print("Error: could not parse OPF for chapter paths")
+                }
+                
+                
+                // Get chapter names from toc.ncx
+                let tocURL = opfURL.deletingLastPathComponent().appendingPathComponent("toc.ncx");
+                if let tocDat = try? XMLHash.parse(Data(contentsOf: tocURL)) {
+                    tocDat["ncx"]["navMap"]["navPoint"].all.forEach { (navPoint) in
+                        self.chapterTitles.append(navPoint["navLabel"]["text"].element?.text ?? "Couldn't get name");
+                    }
+                } else {
+                    print("Error: Couldn't parse table of contents");
+                }
+                
+                
+                
+            } else {
+                print("Error: could not get root file path")
+            }
+        } else {
+            print("Error: could not get xml data")
+        }
+        
+       
+        
     }
     
     func parseEpub(chapterNumber: Int, completion: @escaping (URL?) -> Void) {
@@ -32,9 +99,22 @@ class EpubParser: NSObject, XMLParserDelegate {
         
         if let containerXMLData = FileManager.default.contents(atPath: containerXMLPath) {
             
+            
             let xml = XMLHash.parse(containerXMLData);
+            print("XML: \(xml)")
+            
             if let rootfilePath = xml["container"]["rootfiles"]["rootfile"].element?.attribute(by: "full-path")?.text {
                 let opfURL = unzipDirectory.appendingPathComponent(rootfilePath);
+                if let xmlDat = try? XMLHash.parse(Data(contentsOf: opfURL)) {
+                  
+                    
+                    print("Title: \(xmlDat["package"]["metadata"]["dc:title"].element?.text ?? "Default title")");
+                    
+                    print("Author: \(xmlDat["package"]["metadata"]["dc:creator"].element?.text ?? "Default title")");
+                    
+                } else {
+                    
+                }
                 parseOPFFile(opfURL, chapterNumber: chapterNumber, completion: completion);
             } else {
                 print("Error: could not get root file path")
@@ -63,11 +143,16 @@ class EpubParser: NSObject, XMLParserDelegate {
     
     private func parseOPFFile(_ opfURL: URL, chapterNumber: Int, completion: @escaping (URL?) -> Void) {
         
+        
+        
         if let opfParser = XMLParser(contentsOf: opfURL) {
             opfParser.delegate = self;
+            
             opfParser.parse();
-            print("spine items: \(spineItems)")
-            print("manifest items: \(manifestItems)")
+            
+          //  print("OPF Parser: \(opfParser)");
+          //  print("spine items: \(spineItems)")
+          //  print("manifest items: \(manifestItems)")
             if chapterNumber < spineItems.count, let chapterPath = manifestItems[spineItems[chapterNumber]] {
                 let chapterFullPath = "\(chapterPath)";
                 let chapterURL = unzipDirectory.appendingPathComponent(chapterFullPath);
@@ -85,7 +170,8 @@ class EpubParser: NSObject, XMLParserDelegate {
     
     
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String] = [:]) {
-        
+      //  print("elementName: \(elementName)\n namespaceURI: \(namespaceURI ?? "nil")\n qName: \(qName ?? "nil")\n attributes: \(attributeDict)\n")
+       
         if elementName == "itemref", let idref = attributeDict["idref"] {
             spineItems.append(idref)
         } else if elementName == "item", let itemId = attributeDict["id"], let href = attributeDict["href"] {

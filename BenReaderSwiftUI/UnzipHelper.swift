@@ -31,8 +31,11 @@ class UnzipHelper {
         
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
         let zipName = (zipURL.lastPathComponent as NSString).deletingPathExtension;
-        let unzipDirectory = documentsDirectory.appendingPathComponent(zipName);
+        let unzipDirectory = documentsDirectory.appending(path: "\(zipName)/")//.appendingPathComponent("\(zipName)");
         
+        // YOU NEED THIS LINE DO NOT DELETE!!!!!
+        _ = zipURL.startAccessingSecurityScopedResource()
+  
         // Unzip
         do {
             try SSZipArchive.unzipFile(atPath: zipURL.path, toDestination: unzipDirectory.path, overwrite: true, password: nil);
@@ -42,6 +45,7 @@ class UnzipHelper {
             print("Error unzipping file: \(error)");
             completion(nil);
         }
+        zipURL.stopAccessingSecurityScopedResource()
     }
     
 }
