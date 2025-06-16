@@ -12,6 +12,9 @@ import MediaPlayer
 
 struct AudioPlayerView: View {
     
+    @Environment(\.self) var environment
+    @Environment(\.dismiss) private var dismiss
+    
     @State var isPlaying: Bool = true;
     @State var progress: Double = 0.0
     @State var currentChapter: Chapter;
@@ -19,6 +22,7 @@ struct AudioPlayerView: View {
     @State var showChapters: Bool = false;
     @State var showSpeeds: Bool = false;
     @State var showTimers: Bool = false;
+    @State var showText: Bool = false;
     
     @State var timerValue: TimeInterval?;
     
@@ -61,8 +65,16 @@ struct AudioPlayerView: View {
         NavigationStack {
             VStack {
                 
-                Spacer()
-                
+                if(showText) {
+                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [UIColor.label.toHexString(), UIColor.systemBackground.toHexString()], fontSize: 20, spacing: 8, sides: 4 ).ignoresSafeArea().navigationTitle("")
+                        .mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+                        
+                        
+                    
+                } else {
+                    
+                    Spacer()
+                    
                     if let timerSeconds = player.timerValue {
                         HStack {
                             Spacer()
@@ -70,60 +82,60 @@ struct AudioPlayerView: View {
                             Spacer()
                         }
                     }
-                
-                Spacer()
-                
-               
-                
-                // MARK: - Cover Image
-                
-                AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(book.image)) { image in
-                    image.resizable()
-                } placeholder: {
-                    Image("default_cover").resizable().opacity(0)
-                }
+                    
+                    Spacer()
+                    
+                    
+                    
+                    // MARK: - Cover Image
+                    
+                    AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(book.image)) { image in
+                        image.resizable()
+                    } placeholder: {
+                        Image("default_cover").resizable().opacity(0)
+                    }
                     .scaledToFit()
                     .containerRelativeFrame(.horizontal, count: 2, span: 1, spacing: 0.0)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .shadow(color: .secondary.opacity(0.5), radius: 5)
-                
-                
-                Spacer()
-                
-                Button(action: {
-                    showChapters.toggle()
-                }) {
-                    Label {
-                        Text("\($currentChapter.title.wrappedValue)")
-                    } icon: {
-                        Image(systemName: "list.bullet")
-                    }
-                }.buttonStyle(.plain)
-                    .sheet(isPresented: $showChapters) {
-                        
-                        ScrollView {
-                            VStack {
-                                ForEach(0..<player.chapters.count, id: \.self) { chapter in
-                                
-                                    Button(action: {
-                                        player.player?.seek(to: .init(seconds: player.chapters[chapter].startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero);
-                                    player.play()
-                                    showChapters = false;
-                                    
-                                }) {
-                                    
-                                    Text("\(player.chapters[chapter].title)")
-                                    Spacer()
-                                    Text("\(self.otherFormatter.string(from: .init(player.chapters[chapter].endTime - player.chapters[chapter].startTime)) ?? "")").foregroundStyle(.secondary)
-                                }.buttonStyle(.plain).padding()
-                                Divider()
+                    
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        showChapters.toggle()
+                    }) {
+                        Label {
+                            Text("\($currentChapter.title.wrappedValue)")
+                        } icon: {
+                            Image(systemName: "list.bullet")
+                        }
+                    }.buttonStyle(.plain)
+                        .sheet(isPresented: $showChapters) {
+                            
+                            ScrollView {
+                                VStack {
+                                    ForEach(0..<player.chapters.count, id: \.self) { chapter in
+                                        
+                                        Button(action: {
+                                            player.player?.seek(to: .init(seconds: player.chapters[chapter].startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero);
+                                            player.play()
+                                            showChapters = false;
+                                            
+                                        }) {
+                                            
+                                            Text("\(player.chapters[chapter].title)")
+                                            Spacer()
+                                            Text("\(self.otherFormatter.string(from: .init(player.chapters[chapter].endTime - player.chapters[chapter].startTime)) ?? "")").foregroundStyle(.secondary)
+                                        }.buttonStyle(.plain).padding()
+                                        Divider()
+                                    }
+                                }
                             }
                         }
-                    }
+                    
+                    Spacer()
                 }
-                
-                Spacer()
-                
                 // MARK: - Progress Bar
                 
             
@@ -135,22 +147,21 @@ struct AudioPlayerView: View {
                     } else {
                         self.player.scrubState = .scrubEnded(progress)
                     }
-                }) .padding([.leading, .trailing], 50).shadow(color: .secondary, radius: 5).controlSize(.small).tint(.primary)
+                }) .padding([.leading, .trailing], showText ? 30 : 50).shadow(color: .secondary, radius: 5).controlSize(.small).tint(.primary)
+               
                 
-                HStack {
-                    Text("\(formatter.string(from: $progress.wrappedValue - $currentChapter.startTime.wrappedValue) ?? "unable to parse")")
-                    Spacer()
-                    Text("\(otherFormatter.string(from: TimeInterval($remainingDuration.wrappedValue)) ?? "Unable to Parse") left");
-                    Spacer()
-                    Text("- \(formatter.string(from: $currentChapter.endTime.wrappedValue - $progress.wrappedValue) ?? "unable to parse")")
-                }.padding([.leading, .trailing], 50);
-                
-                HStack {
+                if(!showText) {
+                    HStack {
+                        Text("\(formatter.string(from: $progress.wrappedValue - $currentChapter.startTime.wrappedValue) ?? "unable to parse")")
+                        Spacer()
+                        Text("\(otherFormatter.string(from: TimeInterval($remainingDuration.wrappedValue)) ?? "Unable to Parse") left");
+                        Spacer()
+                        Text("- \(formatter.string(from: $currentChapter.endTime.wrappedValue - $progress.wrappedValue) ?? "unable to parse")")
+                    }.padding([.leading, .trailing], 50);
                     
+                    
+                    Spacer()
                 }
-                
-                
-                Spacer()
                 // MARK: - Audio Buttons
                 
                 HStack {
@@ -159,9 +170,9 @@ struct AudioPlayerView: View {
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: "backward.end").resizable().scaledToFit().frame(width: 40)
+                            Image(systemName: "backward.end").resizable().scaledToFit().frame(width: showText ? 20 : 40)
                         }
-                    }.buttonStyle(.plain).padding(.leading, 50)
+                    }.buttonStyle(.plain).padding(.leading, showText ? 30 : 50 )
                     
                     Button(action: {
                         
@@ -169,7 +180,7 @@ struct AudioPlayerView: View {
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: "gobackward.30").resizable().scaledToFit().frame(width:50)
+                            Image(systemName: "gobackward.30").resizable().scaledToFit().frame(width: showText ? 30 : 50)
                         }
                     }.buttonStyle(.plain).padding()
                     
@@ -179,7 +190,7 @@ struct AudioPlayerView: View {
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: isPlaying ? "pause.circle.fill" :  "play.circle.fill").resizable().scaledToFit().frame(width: 80)
+                            Image(systemName: isPlaying ? "pause.circle.fill" :  "play.circle.fill").resizable().scaledToFit().frame(width: showText ? 50 : 80)
                         }
                     }.buttonStyle(.plain).padding()
                     
@@ -190,7 +201,7 @@ struct AudioPlayerView: View {
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: "goforward.30").resizable().scaledToFit().frame(width: 50)
+                            Image(systemName: "goforward.30").resizable().scaledToFit().frame(width: showText ? 30 : 50)
                         }
                     }.buttonStyle(.plain).padding()
                     Button(action: {
@@ -198,9 +209,9 @@ struct AudioPlayerView: View {
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: "forward.end").resizable().scaledToFit().frame(width: 40)
+                            Image(systemName: "forward.end").resizable().scaledToFit().frame(width: showText ? 20 : 40)
                         }
-                    }.buttonStyle(.plain).padding(.trailing, 50)
+                    }.buttonStyle(.plain).padding(.trailing, showText ? 30 : 50)
                 }
                 
                 
@@ -215,7 +226,7 @@ struct AudioPlayerView: View {
                             Image(systemName:"hare.fill")
                             Text("Speed")
                         }
-                    }.buttonStyle(.plain).padding()
+                    }.buttonStyle(.plain).padding().controlSize(showText ? .small : .regular)
                         .sheet(isPresented: $showSpeeds) {
                             
                             ScrollView {
@@ -243,6 +254,18 @@ struct AudioPlayerView: View {
                         }
                     }
                     
+                    Spacer()
+                    
+                    Button(action: {
+                        showText.toggle();
+                        print(currentChapter.chapterPath)
+                    }) {
+                        VStack {
+                            Image(systemName:"text.page")
+                            Text("Show Text")
+                        }
+                    }.buttonStyle(.plain).padding().controlSize(showText ? .small : .regular)
+                    
                     
                     Spacer()
                     
@@ -253,7 +276,7 @@ struct AudioPlayerView: View {
                             Image(systemName:"timer")
                             Text("Timer")
                         }
-                    }.buttonStyle(.plain).padding()
+                    }.buttonStyle(.plain).padding().controlSize(showText ? .small : .regular)
                         .sheet(isPresented: $showTimers) {
                             
                             ScrollView {
@@ -263,12 +286,9 @@ struct AudioPlayerView: View {
                                         Button(action: {
                                             if(time != 0) {
                                                 if let audioPlayer = player.player {
-                                                    if(time == 1) {
-                                                        
-                                                        player.timerValue = TimeInterval(audioPlayer.currentTime().seconds + 10.0)
-                                                    } else {
-                                                        player.timerValue = TimeInterval(audioPlayer.currentTime().seconds + Double(time) * 60.0 * 10.0)
-                                                    }
+                                                    
+                                                    player.timerValue = TimeInterval(audioPlayer.currentTime().seconds + Double(time) * 60.0 * 10.0)
+                                                    
                                                 } else {
                                                 }
                                             } else {
@@ -396,6 +416,21 @@ struct AudioPlayerView: View {
     }
     
 }
+
+extension UIColor {
+       func toHexString() -> String {
+           var r:CGFloat = 0
+           var g:CGFloat = 0
+           var b:CGFloat = 0
+           var a:CGFloat = 0
+
+           getRed(&r, green: &g, blue: &b, alpha: &a)
+
+           let rgb:Int = (Int)(r*255)<<16 | (Int)(g*255)<<8 | (Int)(b*255)<<0
+
+           return String(format:"#%06x", rgb)
+       }
+   }
 
 #Preview {
     AudioPlayerView(book: Book())

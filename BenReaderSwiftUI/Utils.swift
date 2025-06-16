@@ -146,6 +146,14 @@ public class Utils {
         
     }
   
+    // MARK: - Chapter URL
+    static func getChapterURL(_ book: Book, _ chapter: Chapter) -> URL? {
+        
+        let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
+        let chapURL = documentsDirectory.appendingPathComponent("/\(book.fileName)/OEBPS/\(chapter.chapterPath)");
+        return chapURL
+    }
+    
     // MARK: - Process File
     
     static func processSelectedFile(url: URL, books: [Book]) -> Book? {

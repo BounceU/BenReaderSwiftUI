@@ -11,6 +11,7 @@ import SwiftData
 struct SelectionView: View {
     
     @Environment(\.modelContext) var modelContext
+    @Environment(\.dismiss) private var dismiss
     @Query(sort: \Book.lastOpened, order: .reverse) var books: [Book];
     @State private var showFileImporter: Bool = false
     @State var selectedFileUrl: URL?
@@ -28,7 +29,20 @@ struct SelectionView: View {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(books) { book in
                         
-                        NavigationLink(destination: AudioPlayerView(book: book).tint(.primary)) {
+                        NavigationLink(destination: AudioPlayerView(book: book).tint(.primary).navigationBarBackButtonHidden(true).toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button {
+                                    dismiss() // Dismiss the view
+                                } label: {
+                                    ZStack {
+                                        Image(systemName: "chevron.backward.circle.fill").resizable().frame(width: 30, height: 30)
+                                            .foregroundStyle(.primary)
+                                        
+                                       
+                                    }
+                                }.buttonStyle(.plain).padding()
+                            }
+                        }) {
                             CardView(book: book)
                                 .simultaneousGesture(TapGesture().onEnded {
                                     withAnimation {
