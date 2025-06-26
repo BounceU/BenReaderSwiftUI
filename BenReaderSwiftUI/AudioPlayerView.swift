@@ -9,6 +9,7 @@
 import SwiftUI
 import AVFAudio
 import MediaPlayer
+import WebKit
 
 struct AudioPlayerView: View {
     
@@ -23,8 +24,13 @@ struct AudioPlayerView: View {
     @State var showSpeeds: Bool = false;
     @State var showTimers: Bool = false;
     @State var showText: Bool = false;
+    @State var shouldScroll: Bool = true;
+    @State var currentParagraph: Int = -1;
     
     @State var timerValue: TimeInterval?;
+    
+    @State var webCoord: WebCoordinator = WebCoordinator();
+    
     
     @ObservedObject var player = AudioManager.shared;
     
@@ -66,9 +72,8 @@ struct AudioPlayerView: View {
             VStack {
                 
                 if(showText) {
-                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [UIColor.label.toHexString(), UIColor.systemBackground.toHexString()], fontSize: 20, spacing: 8, sides: 4 ).ignoresSafeArea().navigationTitle("")
-                        .mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
-                        
+                    
+                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [UIColor.label.toHexString(), UIColor.systemBackground.toHexString()], fontSize: 20, spacing: 8, sides: 4, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
                         
                     
                 } else {
@@ -126,11 +131,14 @@ struct AudioPlayerView: View {
                                             
                                             Text("\(player.chapters[chapter].title)")
                                             Spacer()
-                                            Text("\(self.otherFormatter.string(from: .init(player.chapters[chapter].endTime - player.chapters[chapter].startTime)) ?? "")").foregroundStyle(.secondary)
+                                            Text("\(self.otherFormatter.string(from: .init((player.chapters[chapter].endTime - player.chapters[chapter].startTime) / Double(book.rate))) ?? "")").foregroundStyle(.secondary)
                                         }.buttonStyle(.plain).padding()
                                         Divider()
                                     }
                                 }
+                                
+//                                .presentationDetents([.medium])
+//                                .presentationDragIndicator(.visible)
                             }
                         }
                     
@@ -152,11 +160,11 @@ struct AudioPlayerView: View {
                 
                 if(!showText) {
                     HStack {
-                        Text("\(formatter.string(from: $progress.wrappedValue - $currentChapter.startTime.wrappedValue) ?? "unable to parse")")
+                        Text("\(formatter.string(from: ($progress.wrappedValue - $currentChapter.startTime.wrappedValue) / Double(book.rate)) ?? "unable to parse")")
                         Spacer()
-                        Text("\(otherFormatter.string(from: TimeInterval($remainingDuration.wrappedValue)) ?? "Unable to Parse") left");
+                        Text("\(otherFormatter.string(from: TimeInterval(($remainingDuration.wrappedValue) / Double(book.rate))) ?? "Unable to Parse") left");
                         Spacer()
-                        Text("- \(formatter.string(from: $currentChapter.endTime.wrappedValue - $progress.wrappedValue) ?? "unable to parse")")
+                        Text("- \(formatter.string(from: ($currentChapter.endTime.wrappedValue - $progress.wrappedValue) / Double(book.rate)) ?? "unable to parse")")
                     }.padding([.leading, .trailing], 50);
                     
                     
@@ -223,7 +231,9 @@ struct AudioPlayerView: View {
                         showSpeeds.toggle()
                     }) {
                         VStack {
-                            Image(systemName:"hare.fill")
+                            Text("\(String(format: "%.1f", book.rate))x")
+                                .font(.title2) // Use a large font size like .largeTitle or .title
+                                .fontWeight(.bold)
                             Text("Speed")
                         }
                     }.buttonStyle(.plain).padding().controlSize(showText ? .small : .regular)
@@ -235,6 +245,7 @@ struct AudioPlayerView: View {
 
                                         Button(action: {
                                             if let audioPlayer = player.player {
+                                                book.rate = Float(speed) / 10.0
                                                 audioPlayer.rate = Float(speed) / 10.0
                                             } else {
                                                 
@@ -251,6 +262,8 @@ struct AudioPlayerView: View {
                                     Divider()
                                 }
                             }
+//                            .presentationDetents([.medium])
+//                            .presentationDragIndicator(.visible)
                         }
                     }
                     
@@ -306,11 +319,40 @@ struct AudioPlayerView: View {
                                     Divider()
                                 }
                             }
+//                            .presentationDetents([.medium])
+//                            .presentationDragIndicator(.visible)
                         }
                     }
                     
                     Spacer()
+                } .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            dismiss() // Dismiss the view
+                        } label: {
+                            ZStack {
+                                Image(systemName: "chevron.backward.circle.fill").resizable().frame(width: 30, height: 30)
+                                    .foregroundStyle(.primary)
+                                
+                                
+                            }
+                        }.buttonStyle(.plain).padding()
+                    }
+                    
+                    
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            Button {
+                                shouldScroll.toggle();
+                            } label: {
+                                Label("Auto Scroll", systemImage: "lines.measurement.vertical")
+                            }
+                        } label: {
+                            Image(systemName: "line.horizontal.3.circle.fill").resizable().frame(width: 30, height: 30).foregroundStyle(.primary)
+                        }
+                    }
                 }
+                
             }
             
             // MARK: - Navigation Title
@@ -374,7 +416,25 @@ struct AudioPlayerView: View {
             player.trackUpdate();
             isPlaying = player.getIsPlaying()
             book.location = time.seconds
+            
+           
+            
             currentChapter = player.currentChapter ?? self.currentChapter
+            
+            let thisParagraphNumber = currentChapter.getParagraphNumber(time.seconds);
+            if(currentParagraph != thisParagraphNumber) {
+                currentParagraph = thisParagraphNumber
+                if let web = webCoord.webview {
+                    web.evaluateJavaScript(" resetBody();");
+                    web.evaluateJavaScript(" highlightNthSentence(\(currentParagraph));");
+                  
+                    if(shouldScroll) {
+                        web.evaluateJavaScript(" scrollToClass(\"highlight\");");
+                    }
+                      
+                }
+                
+            }
             
         }
     }

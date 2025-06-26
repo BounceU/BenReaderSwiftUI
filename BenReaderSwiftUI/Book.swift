@@ -18,6 +18,7 @@ final class Book: ObservableObject {
     var image: String;
     var location: TimeInterval;
     var lastOpened: Date;
+    var rate: Float;
     
     init(title: String = "Default Title", author: String = "John Doe", image: String = "default_cover") {
         self.title = title;
@@ -26,6 +27,7 @@ final class Book: ObservableObject {
         self.fileName = "";
         self.location = TimeInterval(0);
         self.lastOpened = Date.now;
+        self.rate = 1.0;
     }
     
     init(fileName: String) {
@@ -34,6 +36,7 @@ final class Book: ObservableObject {
         
         self.image = Utils.getCoverURL(fileName) ?? "default_cover";
         
+        self.rate = 1.0;
         
         self.author = "";
         self.location = TimeInterval(0);

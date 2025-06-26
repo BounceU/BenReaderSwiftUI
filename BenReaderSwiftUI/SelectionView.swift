@@ -29,20 +29,7 @@ struct SelectionView: View {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(books) { book in
                         
-                        NavigationLink(destination: AudioPlayerView(book: book).tint(.primary).navigationBarBackButtonHidden(true).toolbar {
-                            ToolbarItem(placement: .topBarLeading) {
-                                Button {
-                                    dismiss() // Dismiss the view
-                                } label: {
-                                    ZStack {
-                                        Image(systemName: "chevron.backward.circle.fill").resizable().frame(width: 30, height: 30)
-                                            .foregroundStyle(.primary)
-                                        
-                                       
-                                    }
-                                }.buttonStyle(.plain).padding()
-                            }
-                        }) {
+                        NavigationLink(destination: AudioPlayerView(book: book).tint(.primary).navigationBarBackButtonHidden(true)) {
                             CardView(book: book)
                                 .simultaneousGesture(TapGesture().onEnded {
                                     withAnimation {

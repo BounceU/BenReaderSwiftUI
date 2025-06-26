@@ -41,4 +41,15 @@ public class Chapter {
     }
     
     
+    func getParagraphNumber(_ time: TimeInterval) -> Int {
+        
+        for (i, p) in paragraphTimes.enumerated() {
+            if p >= time {
+                return i
+            }
+        }
+        
+        return 0
+    }
+    
 }

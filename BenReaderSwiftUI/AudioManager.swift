@@ -123,11 +123,11 @@ class AudioManager: ObservableObject {
         guard let player = self.player else {
             return;
         }
-        player.seek(to: .init(seconds: player.currentTime().seconds + amount, preferredTimescale: 1), toleranceBefore: .zero, toleranceAfter: .zero)
+        player.seek(to: .init(seconds: player.currentTime().seconds + amount * Double((book?.rate ?? 1)), preferredTimescale: 1), toleranceBefore: .zero, toleranceAfter: .zero)
     }
     
     func togglePlayer() {
-        guard let player = self.player else {
+        guard self.player != nil else {
             return;
         }
         
@@ -162,6 +162,7 @@ class AudioManager: ObservableObject {
             }
         }
         player?.play();
+        player?.rate = book?.rate ?? 1.0;
     }
     
     func pause() {
@@ -181,6 +182,7 @@ class AudioManager: ObservableObject {
         
         
         player?.play()
+        player?.rate = book.rate;
         updateNowPlayingInfo()
     }
     

@@ -1,3 +1,11 @@
+//
+//  WebCoordinator.swift
+//  BenReaderSwiftUI
+//
+//  Created by Ben Liebkemann on 6/18/25.
+//
+
+
 
 import Foundation
 import WebKit
