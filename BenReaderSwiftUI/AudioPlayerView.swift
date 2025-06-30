@@ -40,6 +40,16 @@ struct AudioPlayerView: View {
     var maxValue: Double = 1.0;
     var formatter: DateComponentsFormatter;
     var otherFormatter: DateComponentsFormatter;
+    
+    @State var color1: UIColor = UIColor.systemBackground
+    @State var color2: UIColor = UIColor.label
+    @State var fontSize: CGFloat = 20
+    @State var spacing: CGFloat = 8
+    @State var sides: CGFloat = 4
+    @State var showStyles: Bool = false;
+    @State var showSpacing: Bool = false;
+    @State var showSizes: Bool = false;
+    
     @ObservedObject var book: Book;
     @State var timeObserver: Any?;
     
@@ -73,17 +83,19 @@ struct AudioPlayerView: View {
                 
                 if(showText) {
                     
-                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [UIColor.label.toHexString(), UIColor.systemBackground.toHexString()], fontSize: 20, spacing: 8, sides: 4, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [color1.toHexString(), color2.toHexString()], fontSize: self.fontSize, spacing: self.spacing, sides: self.sides, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
                         
                     
                 } else {
                     
                     Spacer()
                     
+                    // MARK: - Sleep Timer Label
+                    
                     if let timerSeconds = player.timerValue {
                         HStack {
                             Spacer()
-                            Text("Sleep Timer: \(formatter.string(from: .init(TimeInterval(timerSeconds - progress))) ?? "0 s")")
+                            Text("Sleep Timer: \(formatter.string(from: .init(TimeInterval(timerSeconds - Date().timeIntervalSince1970) > 0 ? timerSeconds - Date().timeIntervalSince1970 : 0)) ?? "0 s")")
                             Spacer()
                         }
                     }
@@ -117,6 +129,8 @@ struct AudioPlayerView: View {
                         }
                     }.buttonStyle(.plain)
                         .sheet(isPresented: $showChapters) {
+                            
+                            Text("Chapters").font(.headline).padding()
                             
                             ScrollView {
                                 VStack {
@@ -227,6 +241,9 @@ struct AudioPlayerView: View {
                 HStack {
                     
                     Spacer()
+                    
+                    // MARK: - Speeds List
+                    
                     Button (action: {
                         showSpeeds.toggle()
                     }) {
@@ -239,6 +256,7 @@ struct AudioPlayerView: View {
                     }.buttonStyle(.plain).padding().controlSize(showText ? .small : .regular)
                         .sheet(isPresented: $showSpeeds) {
                             
+                            Text("Speed").font(.headline).padding()
                             ScrollView {
                                 VStack {
                                     ForEach(5...30, id: \.self) { speed in
@@ -269,6 +287,7 @@ struct AudioPlayerView: View {
                     
                     Spacer()
                     
+                    // MARK: - Show Text Button
                     Button(action: {
                         showText.toggle();
                         print(currentChapter.chapterPath)
@@ -282,6 +301,8 @@ struct AudioPlayerView: View {
                     
                     Spacer()
                     
+                    
+                    // MARK: - Sleep Timer List
                     Button (action: {
                         showTimers.toggle()
                     }) {
@@ -292,15 +313,16 @@ struct AudioPlayerView: View {
                     }.buttonStyle(.plain).padding().controlSize(showText ? .small : .regular)
                         .sheet(isPresented: $showTimers) {
                             
+                            Text("Timer").font(.headline).padding()
                             ScrollView {
                                 VStack {
                                     ForEach(0...12, id: \.self) { time in
 //
                                         Button(action: {
                                             if(time != 0) {
-                                                if let audioPlayer = player.player {
+                                                if player.player != nil {
                                                     
-                                                    player.timerValue = TimeInterval(audioPlayer.currentTime().seconds + Double(time) * 60.0 * 10.0)
+                                                    player.timerValue = TimeInterval(Date().timeIntervalSince1970 + Double(time) * 60.0 * 10.0)
                                                     
                                                 } else {
                                                 }
@@ -326,6 +348,8 @@ struct AudioPlayerView: View {
                     
                     Spacer()
                 } .toolbar {
+                    // MARK: - Toolbar
+                    // MARK: - Back Button to Selection View
                     ToolbarItem(placement: .topBarLeading) {
                         Button {
                             dismiss() // Dismiss the view
@@ -340,16 +364,165 @@ struct AudioPlayerView: View {
                     }
                     
                     
+                    // MARK: - Menu Button
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button {
-                                shouldScroll.toggle();
-                            } label: {
-                                Label("Auto Scroll", systemImage: "lines.measurement.vertical")
+                            shouldScroll.toggle();
+                        } label: {
+                            Label("Auto Scroll", systemImage: "lines.measurement.vertical")
+                        }
+                                
+                             
+                                
+                                // MARK: - Style
+                        Button {
+                            withAnimation {
+                                showStyles.toggle();
                             }
                         } label: {
+                            HStack {
+                                Text("Styles")
+                                Spacer()
+                                Image(systemName: showStyles ? "chevron.down" : "chevron.right")
+                            }
+                        }.menuActionDismissBehavior(.disabled)
+                        Section(isExpanded: $showStyles, content: {
+                            Button {
+                                color1 = UIColor.white
+                                color2 = UIColor.black
+                                if let web = webCoord.webview {
+                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                    currentParagraph = 0;
+                                }
+                            } label: {
+                                Text("Light")
+                            }.menuActionDismissBehavior(.disabled)
+                            Button {
+                                color1 = UIColor.black
+                                color2 = UIColor.white
+                                if let web = webCoord.webview {
+                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                    currentParagraph = 0;
+                                }
+                            } label: {
+                                Text("Dark")
+                            }.menuActionDismissBehavior(.disabled)
+                            Button {
+                                color1 = UIColor(red: 0.984, green: 0.941, blue: 0.851, alpha: 1.0)
+                                color2 = UIColor(red: 0.372, green: 0.294, blue: 0.196, alpha: 1.0)
+                                if let web = webCoord.webview {
+                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                    currentParagraph = 0;
+                                }
+                            } label: {
+                                Text("Sepia")
+                            }.menuActionDismissBehavior(.disabled)
+                        }, header: {
+                        })
+                            
+                                // MARK: - Spacing
+                        Button {
+                            withAnimation {
+                                showSpacing.toggle();
+                            }
+                        } label: {
+                            HStack {
+                                Text("Spacing")
+                                Spacer()
+                                Image(systemName: showSpacing ? "chevron.down" : "chevron.right")
+                            }
+                        }.menuActionDismissBehavior(.disabled)
+                        Section(isExpanded: $showSpacing, content: {
+                            Button {
+                                spacing = 2
+                                sides = 2
+                                if let web = webCoord.webview {
+                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                    currentParagraph = 0;
+                                }
+                            } label: {
+                                Text("Wide")
+                            }.menuActionDismissBehavior(.disabled)
+                            Button {
+                                spacing = 8
+                                sides = 4
+                                if let web = webCoord.webview {
+                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                    currentParagraph = 0;
+                                }
+                            } label: {
+                                Text("Normal")
+                            }.menuActionDismissBehavior(.disabled)
+                            Button {
+                                spacing = 8
+                                sides = 8
+                                if let web = webCoord.webview {
+                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                    currentParagraph = 0;
+                                }
+                            } label: {
+                                Text("Compact")
+                            }.menuActionDismissBehavior(.disabled)
+                            
+                        }, header: {
+                        })
+                                    
+                        // MARK: - Size
+                        Button {
+                            withAnimation {
+                                showSizes.toggle();
+                            }
+                        } label: {
+                            HStack {
+                                Text("Sizes")
+                                Spacer()
+                                Image(systemName: showSizes ? "chevron.down" : "chevron.right")
+                            }
+                        }.menuActionDismissBehavior(.disabled)
+                        Section(isExpanded: $showSizes, content: {
+                                Button {
+                                    fontSize = 12
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Small")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    fontSize = 20
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Normal")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    fontSize = 28
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Large")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    fontSize = 36
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Very Large")
+                                }.menuActionDismissBehavior(.disabled)
+
+                            }, header: {})
+                            
+                        } label: {
                             Image(systemName: "line.horizontal.3.circle.fill").resizable().frame(width: 30, height: 30).foregroundStyle(.primary)
-                        }
+                        }.listStyle(.sidebar)
                     }
                 }
                 
@@ -387,9 +560,11 @@ struct AudioPlayerView: View {
         }
     }
     
+    // MARK: - Time Observer for Progress Bar
+    
     func addPeriodicTimeObserver() {
         // Invoke callback every half second
-        let interval = CMTime(seconds: 0.1,
+        let interval = CMTime(seconds: 0.2,
                               preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         // Add time observer. Invoke closure on the main queue.
         timeObserver =
@@ -440,6 +615,7 @@ struct AudioPlayerView: View {
     }
     
     
+    // MARK: - Remote Controls
     
     private func setupRemoteControls() {
         player.play(book: book);
@@ -448,6 +624,10 @@ struct AudioPlayerView: View {
         
         
         let commands = MPRemoteCommandCenter.shared();
+        commands.skipForwardCommand.isEnabled = true
+        commands.skipBackwardCommand.isEnabled = true
+        commands.skipForwardCommand.preferredIntervals = [30]
+        commands.skipBackwardCommand.preferredIntervals = [30]
         commands.pauseCommand.addTarget { _ in
             player.pause();
             return .success
@@ -466,7 +646,15 @@ struct AudioPlayerView: View {
             return .success
         }
        
+        commands.skipForwardCommand.addTarget { _ in
+            player.skip(30)
+            return .success
+        }
         
+        commands.skipBackwardCommand.addTarget { _ in
+            player.skip(-30)
+            return .success
+        }
         
         
         

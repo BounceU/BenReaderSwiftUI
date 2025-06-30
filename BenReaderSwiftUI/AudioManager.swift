@@ -112,8 +112,14 @@ class AudioManager: ObservableObject {
             }
             
             if let timerSeconds = timerValue {
-                if seconds >= timerSeconds {
+                let systemSeconds = Date().timeIntervalSince1970;
+                
+                if systemSeconds >= timerSeconds {
                     pause()
+                } else {
+                    if timerSeconds - systemSeconds <= 5 {
+                        player?.volume = Float((timerSeconds - systemSeconds) / 5.0);
+                    }
                 }
             }
         }
@@ -156,11 +162,13 @@ class AudioManager: ObservableObject {
     }
     
     func play() {
+        
         if let timerSeconds = timerValue {
-            if player?.currentItem?.currentTime().seconds ?? 0 >= timerSeconds {
+            if Date().timeIntervalSince1970 >= timerSeconds {
                 timerValue = nil
             }
         }
+        player?.volume = 1.0;
         player?.play();
         player?.rate = book?.rate ?? 1.0;
     }
