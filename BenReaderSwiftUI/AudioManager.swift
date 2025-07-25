@@ -105,8 +105,8 @@ class AudioManager: ObservableObject {
                 if(seconds < st || seconds > et) {
                     updateNowPlayingInfo();
                 }
-                info[MPNowPlayingInfoPropertyPlaybackProgress] = (seconds - st) / (et - st)
-                info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = (seconds - st)
+                info[MPNowPlayingInfoPropertyPlaybackProgress] = (seconds - st) / (et - st) / Double(book?.rate ?? 1)
+                info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = (seconds - st) / Double(book?.rate ?? 1)
                
                 MPNowPlayingInfoCenter.default().nowPlayingInfo = info
             }
@@ -179,7 +179,9 @@ class AudioManager: ObservableObject {
     
     func play(book: Book) {
         timerValue = nil
+        print("STARTING PLAY OF BOOK")
         guard let url = Utils.getAudioURL(book.fileName) else { return }
+        print("URL: \(url)")
         self.book = book;
         
         
@@ -229,8 +231,8 @@ class AudioManager: ObservableObject {
             
             MPMediaItemPropertyAlbumTitle: book.title,
             
-            MPMediaItemPropertyPlaybackDuration: ((currentChapter?.endTime ?? currentItem.duration.seconds) - (currentChapter?.startTime ?? 0)),
-            MPNowPlayingInfoPropertyElapsedPlaybackTime: player.currentTime().seconds - (currentChapter?.startTime ?? 0),
+            MPMediaItemPropertyPlaybackDuration: ((currentChapter?.endTime ?? currentItem.duration.seconds) - (currentChapter?.startTime ?? 0)) / Double(book.rate),
+            MPNowPlayingInfoPropertyElapsedPlaybackTime: player.currentTime().seconds - (currentChapter?.startTime ?? 0) / Double(book.rate),
             MPNowPlayingInfoPropertyPlaybackRate: player.rate,
         ]
       

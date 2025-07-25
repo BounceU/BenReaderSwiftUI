@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct SelectionView: View {
     
@@ -15,6 +16,7 @@ struct SelectionView: View {
     @Query(sort: \Book.lastOpened, order: .reverse) var books: [Book];
     @State private var showFileImporter: Bool = false
     @State var selectedFileUrl: URL?
+    let benrDocumentType = UTType(filenameExtension: "benr")!
     
     var columns: [GridItem] = [
         GridItem(.flexible()),
@@ -91,7 +93,7 @@ struct SelectionView: View {
             }.tint(.primary)
             
         }
-        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [.zip], allowsMultipleSelection: false) { result in
+        .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [benrDocumentType], allowsMultipleSelection: false) { result in
                         switch result {
                         case .success(let urls):
                             
@@ -111,6 +113,8 @@ struct SelectionView: View {
        
         
     }
+    
+    // MARK: - Create book
     
     private func addItem() {
         withAnimation {

@@ -25,6 +25,7 @@ struct AudioPlayerView: View {
     @State var showTimers: Bool = false;
     @State var showText: Bool = false;
     @State var shouldScroll: Bool = true;
+    @State var cursorOffset: Int = 0;
     @State var currentParagraph: Int = -1;
     
     @State var timerValue: TimeInterval?;
@@ -43,20 +44,19 @@ struct AudioPlayerView: View {
     
     @State var color1: UIColor = UIColor.systemBackground
     @State var color2: UIColor = UIColor.label
+    @State var hicol: String = "darkgreen"
     @State var fontSize: CGFloat = 20
     @State var spacing: CGFloat = 8
     @State var sides: CGFloat = 4
     @State var showStyles: Bool = false;
     @State var showSpacing: Bool = false;
     @State var showSizes: Bool = false;
-    
     @ObservedObject var book: Book;
     @State var timeObserver: Any?;
     
     
     init(book: Book) {
         self.book = book;
-        
         self.currentChapter = Chapter(title: "Chapter 1", startTime: "c 0:00:00".replacingOccurrences(of: "c ", with: ""), endTime: "c 0:28:20.825000".replacingOccurrences(of: "c ", with: ""));
         
         self.formatter = DateComponentsFormatter();
@@ -72,6 +72,7 @@ struct AudioPlayerView: View {
         otherFormatter.allowedUnits = [ .hour, .minute];
         otherFormatter.unitsStyle = .abbreviated;
         otherFormatter.zeroFormattingBehavior = .default;
+   
         
         
     }
@@ -83,7 +84,7 @@ struct AudioPlayerView: View {
                 
                 if(showText) {
                     
-                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [color1.toHexString(), color2.toHexString()], fontSize: self.fontSize, spacing: self.spacing, sides: self.sides, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [color1.toHexString(), color2.toHexString()], highlightColor: self.hicol, fontSize: self.fontSize, spacing: self.spacing, sides: self.sides, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
                         
                     
                 } else {
@@ -212,7 +213,7 @@ struct AudioPlayerView: View {
                     }) {
                         Label {
                         } icon: {
-                            Image(systemName: isPlaying ? "pause.circle.fill" :  "play.circle.fill").resizable().scaledToFit().frame(width: showText ? 50 : 80)
+                            Image(systemName: player.getIsPlaying() ? "pause.circle.fill" :  "play.circle.fill").resizable().scaledToFit().frame(width: showText ? 50 : 80)
                         }
                     }.buttonStyle(.plain).padding()
                     
@@ -368,123 +369,126 @@ struct AudioPlayerView: View {
                     ToolbarItem(placement: .topBarTrailing) {
                         Menu {
                             Button {
-                            shouldScroll.toggle();
-                        } label: {
-                            Label("Auto Scroll", systemImage: "lines.measurement.vertical")
-                        }
+                                shouldScroll.toggle();
+                            } label: {
+                                Label("Auto Scroll", systemImage: "lines.measurement.vertical")
+                            }
                                 
                              
                                 
                                 // MARK: - Style
-                        Button {
-                            withAnimation {
-                                showStyles.toggle();
-                            }
-                        } label: {
-                            HStack {
-                                Text("Styles")
-                                Spacer()
-                                Image(systemName: showStyles ? "chevron.down" : "chevron.right")
-                            }
-                        }.menuActionDismissBehavior(.disabled)
-                        Section(isExpanded: $showStyles, content: {
                             Button {
-                                color1 = UIColor.white
-                                color2 = UIColor.black
-                                if let web = webCoord.webview {
-                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
-                                    currentParagraph = 0;
+                                withAnimation {
+                                    showStyles.toggle();
                                 }
                             } label: {
-                                Text("Light")
+                                HStack {
+                                    Text("Styles")
+                                    Spacer()
+                                    Image(systemName: showStyles ? "chevron.down" : "chevron.right")
+                                }
                             }.menuActionDismissBehavior(.disabled)
+                            Section(isExpanded: $showStyles, content: {
+                                Button {
+                                    color1 = UIColor.white
+                                    color2 = UIColor.black
+                                    hicol = "lightgreen"
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Light")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    color1 = UIColor.black
+                                    color2 = UIColor.white
+                                    hicol = "darkgreen"
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Dark")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    color1 = UIColor(red: 0.984, green: 0.941, blue: 0.851, alpha: 1.0)
+                                    color2 = UIColor(red: 0.372, green: 0.294, blue: 0.196, alpha: 1.0)
+                                    hicol = "yellowgreen"
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Sepia")
+                                }.menuActionDismissBehavior(.disabled)
+                            }, header: {
+                            })
+                                
+                                    // MARK: - Spacing
                             Button {
-                                color1 = UIColor.black
-                                color2 = UIColor.white
-                                if let web = webCoord.webview {
-                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
-                                    currentParagraph = 0;
+                                withAnimation {
+                                    showSpacing.toggle();
                                 }
                             } label: {
-                                Text("Dark")
+                                HStack {
+                                    Text("Spacing")
+                                    Spacer()
+                                    Image(systemName: showSpacing ? "chevron.down" : "chevron.right")
+                                }
                             }.menuActionDismissBehavior(.disabled)
+                            Section(isExpanded: $showSpacing, content: {
+                                Button {
+                                    spacing = 2
+                                    sides = 2
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Wide")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    spacing = 8
+                                    sides = 4
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Normal")
+                                }.menuActionDismissBehavior(.disabled)
+                                Button {
+                                    spacing = 8
+                                    sides = 8
+                                    if let web = webCoord.webview {
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        currentParagraph = 0;
+                                    }
+                                } label: {
+                                    Text("Compact")
+                                }.menuActionDismissBehavior(.disabled)
+                                
+                            }, header: {
+                            })
+                                        
+                            // MARK: - Size
                             Button {
-                                color1 = UIColor(red: 0.984, green: 0.941, blue: 0.851, alpha: 1.0)
-                                color2 = UIColor(red: 0.372, green: 0.294, blue: 0.196, alpha: 1.0)
-                                if let web = webCoord.webview {
-                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
-                                    currentParagraph = 0;
+                                withAnimation {
+                                    showSizes.toggle();
                                 }
                             } label: {
-                                Text("Sepia")
-                            }.menuActionDismissBehavior(.disabled)
-                        }, header: {
-                        })
-                            
-                                // MARK: - Spacing
-                        Button {
-                            withAnimation {
-                                showSpacing.toggle();
-                            }
-                        } label: {
-                            HStack {
-                                Text("Spacing")
-                                Spacer()
-                                Image(systemName: showSpacing ? "chevron.down" : "chevron.right")
-                            }
-                        }.menuActionDismissBehavior(.disabled)
-                        Section(isExpanded: $showSpacing, content: {
-                            Button {
-                                spacing = 2
-                                sides = 2
-                                if let web = webCoord.webview {
-                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
-                                    currentParagraph = 0;
+                                HStack {
+                                    Text("Sizes")
+                                    Spacer()
+                                    Image(systemName: showSizes ? "chevron.down" : "chevron.right")
                                 }
-                            } label: {
-                                Text("Wide")
                             }.menuActionDismissBehavior(.disabled)
-                            Button {
-                                spacing = 8
-                                sides = 4
-                                if let web = webCoord.webview {
-                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
-                                    currentParagraph = 0;
-                                }
-                            } label: {
-                                Text("Normal")
-                            }.menuActionDismissBehavior(.disabled)
-                            Button {
-                                spacing = 8
-                                sides = 8
-                                if let web = webCoord.webview {
-                                    web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
-                                    currentParagraph = 0;
-                                }
-                            } label: {
-                                Text("Compact")
-                            }.menuActionDismissBehavior(.disabled)
-                            
-                        }, header: {
-                        })
-                                    
-                        // MARK: - Size
-                        Button {
-                            withAnimation {
-                                showSizes.toggle();
-                            }
-                        } label: {
-                            HStack {
-                                Text("Sizes")
-                                Spacer()
-                                Image(systemName: showSizes ? "chevron.down" : "chevron.right")
-                            }
-                        }.menuActionDismissBehavior(.disabled)
-                        Section(isExpanded: $showSizes, content: {
+                            Section(isExpanded: $showSizes, content: {
                                 Button {
                                     fontSize = 12
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
                                         currentParagraph = 0;
                                     }
                                 } label: {
@@ -493,7 +497,7 @@ struct AudioPlayerView: View {
                                 Button {
                                     fontSize = 20
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
                                         currentParagraph = 0;
                                     }
                                 } label: {
@@ -502,7 +506,7 @@ struct AudioPlayerView: View {
                                 Button {
                                     fontSize = 28
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
                                         currentParagraph = 0;
                                     }
                                 } label: {
@@ -511,7 +515,7 @@ struct AudioPlayerView: View {
                                 Button {
                                     fontSize = 36
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize));");
+                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
                                         currentParagraph = 0;
                                     }
                                 } label: {
@@ -519,9 +523,25 @@ struct AudioPlayerView: View {
                                 }.menuActionDismissBehavior(.disabled)
 
                             }, header: {})
-                            
+                            // MARK: - Cursor Offset
+                            ControlGroup {
+                                Button {
+                                    cursorOffset -= 1;
+                                } label: {
+                                    Label("Cursor Offset", systemImage: "minus")
+                                }.menuActionDismissBehavior(.disabled)
+                                
+                                Button {
+                                    cursorOffset += 1;
+                                } label: {
+                                    Label("Cursor Offset", systemImage: "plus")
+                                }.menuActionDismissBehavior(.disabled)
+                            }
                         } label: {
                             Image(systemName: "line.horizontal.3.circle.fill").resizable().frame(width: 30, height: 30).foregroundStyle(.primary)
+                            
+                      
+                            
                         }.listStyle(.sidebar)
                     }
                 }
@@ -560,6 +580,8 @@ struct AudioPlayerView: View {
         }
     }
     
+    
+
     // MARK: - Time Observer for Progress Bar
     
     func addPeriodicTimeObserver() {
@@ -593,7 +615,11 @@ struct AudioPlayerView: View {
             book.location = time.seconds
             
            
-            
+            if let playerChap = player.currentChapter {
+                if currentChapter.startTime != playerChap.startTime {
+                    cursorOffset = 0
+                }
+            }
             currentChapter = player.currentChapter ?? self.currentChapter
             
             let thisParagraphNumber = currentChapter.getParagraphNumber(time.seconds);
@@ -601,7 +627,7 @@ struct AudioPlayerView: View {
                 currentParagraph = thisParagraphNumber
                 if let web = webCoord.webview {
                     web.evaluateJavaScript(" resetBody();");
-                    web.evaluateJavaScript(" highlightNthSentence(\(currentParagraph));");
+                    web.evaluateJavaScript(" highlightNthSentence(\(currentParagraph + cursorOffset));");
                   
                     if(shouldScroll) {
                         web.evaluateJavaScript(" scrollToClass(\"highlight\");");
@@ -663,6 +689,7 @@ struct AudioPlayerView: View {
         
     }
     
+
 }
 
 extension UIColor {

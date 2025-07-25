@@ -30,8 +30,13 @@ class EpubParser: NSObject, XMLParserDelegate {
     
     func initializeData() {
         let containerXMLPath = unzipDirectory.appendingPathComponent("META-INF/container.xml").path;
+        
+        print("xmlParser initialize, xml path: \(containerXMLPath)");
+        
         if let containerXMLData = FileManager.default.contents(atPath: containerXMLPath) {
             
+            
+            print("xmlParser data: \(String(data: containerXMLData, encoding: .utf8) ?? "")");
             
             let xml = XMLHash.parse(containerXMLData);
             
@@ -43,6 +48,8 @@ class EpubParser: NSObject, XMLParserDelegate {
             
                     self.author = xmlDat["package"]["metadata"]["dc:creator"].element?.text ?? "";
                     self.title = xmlDat["package"]["metadata"]["dc:title"].element?.text ?? "Default title"
+                    
+                    print("Got author and title: \(author), \(title)")
                     
                 } else {
                     print("Error: Could not get data from OPF for author and title")
@@ -57,6 +64,7 @@ class EpubParser: NSObject, XMLParserDelegate {
                     for i in 0..<spineItems.count {
                         if let chapterPath = manifestItems[spineItems[i]] {
                             let chapterFullPath = "\(chapterPath)";
+                            print("Got chapter path \(chapterFullPath)")
                             self.chapterPaths.append(chapterFullPath);
                         }
                         
@@ -72,6 +80,7 @@ class EpubParser: NSObject, XMLParserDelegate {
                 if let tocDat = try? XMLHash.parse(Data(contentsOf: tocURL)) {
                     tocDat["ncx"]["navMap"]["navPoint"].all.forEach { (navPoint) in
                         self.chapterTitles.append(navPoint["navLabel"]["text"].element?.text ?? "Couldn't get name");
+                        print("Got chapter name \(navPoint["navLabel"]["text"].element?.text ?? "Couldn't get name")")
                     }
                 } else {
                     print("Error: Couldn't parse table of contents");
@@ -125,7 +134,15 @@ class EpubParser: NSObject, XMLParserDelegate {
         
     }
     
-    
+    func getCover() -> URL? {
+        if let imageURL = manifestItems["cover-image"] {
+            print("COVER IMAGE: \(imageURL)")
+            return unzipDirectory.appendingPathComponent("OEBPS/\(imageURL)");
+        } else {
+            print("Can't find cover image")
+            return nil
+        }
+    }
     
     func getAuthor() -> String? {
         
@@ -134,7 +151,7 @@ class EpubParser: NSObject, XMLParserDelegate {
         print("containerXMLPath: \(containerXMLPath)");
         if let containerXMLData = FileManager.default.contents(atPath: containerXMLPath) {
             
-            let xml = XMLHash.parse(containerXMLData);
+            _ = XMLHash.parse(containerXMLData);
         }
         
         return nil;
