@@ -10,11 +10,11 @@ import SSZipArchive
 
 class UnzipHelper {
     
-    static func unzipEPUB(epubURL: URL, completion: @escaping (URL?) -> Void) {
+    static func unzipEPUB(epubURL: URL, unzipDirectory: URL, completion: @escaping (URL?) -> Void) {
         
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
         let epubName = (epubURL.lastPathComponent as NSString).deletingPathExtension;
-        let unzipDirectory = documentsDirectory.appendingPathComponent(epubName);
+       // let unzipDirectory = documentsDirectory.appendingPathComponent(epubName);
         
         // Unzip
         do {

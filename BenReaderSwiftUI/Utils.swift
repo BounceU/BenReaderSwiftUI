@@ -16,6 +16,7 @@ public class Utils {
         
         let timeStampPath = getTimestampURL(book.fileName)!
         
+        
         if let fileData = try? String(contentsOfFile: timeStampPath.path(), encoding: .ascii) {
             
             var lines: [String] = [];
@@ -107,6 +108,8 @@ public class Utils {
         let jsonResult = try? JSONSerialization.jsonObject(with: data!, options: .mutableLeaves)
         var fileURL = documentsDirectory.appendingPathComponent("/\(bookName)/\(bookName).m4a");
         if let jsonResult = jsonResult as? Dictionary<String, AnyObject> {
+            print("Got JSON: \(jsonResult)")
+            print("Audio file: \(jsonResult["audio_file"])")
             fileURL = documentsDirectory.appendingPathComponent("/\(bookName)/\(jsonResult["audio_file"]! as! String)");
         
         }
@@ -130,7 +133,9 @@ public class Utils {
         let jsonResult = try? JSONSerialization.jsonObject(with: data!, options: .mutableLeaves)
         var fileURL = documentsDirectory.appendingPathComponent("\(bookName)/\(bookName).txt");
         if let jsonResult = jsonResult as? Dictionary<String, AnyObject> {
-            fileURL = documentsDirectory.appendingPathComponent("/\(bookName)/\(jsonResult["timing_file"]! as! String)");
+            print("Got JSON: \(jsonResult)")
+            print("Timing file: \(jsonResult["timing_file"])")
+            fileURL = documentsDirectory.appendingPathComponent("\(bookName)/\(jsonResult["timing_file"]! as! String)");
         }
         
 
@@ -215,11 +220,14 @@ public class Utils {
             let jsonResult = try? JSONSerialization.jsonObject(with: data!, options: .mutableLeaves)
             var epubURL = documentsDirectory.appendingPathComponent("/\(epubName)/\(epubName).epub");
             if let jsonResult = jsonResult as? Dictionary<String, AnyObject> {
+                print("Got JSON: \(jsonResult)")
+                print("Book file: \(jsonResult["book_file"])")
                 epubURL = documentsDirectory.appendingPathComponent("/\(epubName)/\(jsonResult["book_file"]! as! String)");
+                print("Got new epub url: \(epubURL)")
             
             }
             if FileManager.default.fileExists(atPath: epubURL.path) {
-                UnzipHelper.unzipEPUB(epubURL: epubURL) { unzipDirectory in
+                UnzipHelper.unzipEPUB(epubURL: epubURL, unzipDirectory: documentsDirectory.appendingPathComponent("\(epubName)")) { unzipDirectory in
                     guard let  _ = unzipDirectory else {
                         print("error unizzping epub after unzipping zip.");
                         return;
@@ -234,6 +242,7 @@ public class Utils {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
         
         let newBook = Book(fileName: "\(epubName)");
+        print("Using file name \(newBook.fileName)")
         let parser = getChapterInfo(book: newBook);
         newBook.title = parser.title;
         newBook.author = parser.author;
