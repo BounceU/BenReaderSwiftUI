@@ -121,7 +121,6 @@ public class Utils {
     
     static func getTimestampURL(_ bookName: String) -> URL? {
 
-        // 1. Get the Documents directory URL
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
           // print("Error: Could not get Documents directory URL")
             return nil

@@ -11,7 +11,7 @@ struct CardView: View {
     let book: Book
     var body: some View {
         VStack {
-            AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(book.image)) { image in
+            AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(Utils.getCoverURL(book.fileName)!)) { image in
                 image.resizable()
             } placeholder: {
                 Image("default_cover").resizable()

@@ -31,32 +31,29 @@ struct SelectionView: View {
                 LazyVGrid(columns: columns, spacing: 16) {
                     ForEach(books) { book in
                         
-                        NavigationLink(destination: AudioPlayerView(book: book).tint(.primary).navigationBarBackButtonHidden(true)) {
-                            CardView(book: book)
-                                .simultaneousGesture(TapGesture().onEnded {
-                                    withAnimation {
-                                        book.lastOpened = Date.now;
-                                    }
-                                })
-                        }
                         
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            
-                            Button {
-                                
-                            } label: {
-                                Label("Details", systemImage: "info.circle")
+                          NavigationLink(destination: AudioPlayerView(book: book).tint(.primary).navigationBarBackButtonHidden(true)) {
+                        CardView(book: book)
+                            .simultaneousGesture(TapGesture().onEnded {
+                                withAnimation {
+                                    book.lastOpened = Date.now;
+                                }
+                            }).onAppear() {
+                                print("Newly made")
                             }
-                            
-                            Button(role: .destructive) {
-                              
+                          }
+                        
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                
+                                Button(role: .destructive) {
+                                    
                                     removeBook(book);
-                                
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                                    
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
-                        }
                     }
                     
                 }
@@ -75,7 +72,7 @@ struct SelectionView: View {
                     Text("Books").font(.largeTitle)
                 }
                 
-             
+                
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showFileImporter = true;
@@ -88,29 +85,30 @@ struct SelectionView: View {
                             }
                         }
                     }
-                            
+                    
                 }
             }.tint(.primary)
             
         }
         .fileImporter(isPresented: $showFileImporter, allowedContentTypes: [benrDocumentType], allowsMultipleSelection: false) { result in
-                        switch result {
-                        case .success(let urls):
-                            
-                           
-                            if let firstUrl = urls.first {
-                                
-                                
-                                selectedFileUrl = firstUrl
-                               
-                                //addBook(url: firstUrl);
-                              
-                            }
-                        case .failure(let error):
-                            print("Error importing file: \(error.localizedDescription)")
-                        }
-                    }
-       
+            switch result {
+            case .success(let urls):
+                
+                
+                if let firstUrl = urls.first {
+                    
+                    
+                    selectedFileUrl = firstUrl
+                    
+                    //addBook(url: firstUrl);
+                    
+                }
+            case .failure(let error):
+                print("Error importing file: \(error.localizedDescription)")
+            }
+            showFileImporter = false;
+        }
+        
         
     }
     
@@ -122,7 +120,7 @@ struct SelectionView: View {
             modelContext.insert(newItem)
         }
     }
-
+    
     private func deleteItems(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
@@ -134,7 +132,7 @@ struct SelectionView: View {
     
     func getStuffFromUser(url: URL) -> Book? {
         return Utils.processSelectedFile(url: url, books: books)
-
+        
     }
     
     func addBook() {
@@ -148,10 +146,21 @@ struct SelectionView: View {
             print("Couldn't add book");
         }
         
+        do {
+            try modelContext.save()
+            modelContext.processPendingChanges()
+        } catch {
+            print("Error saving context: \(error)")
+        }
+        print("Finished adding")
+        
     }
     
     func removeBook(_ book: Book) {
         //Remove folder
+        
+        AudioManager.shared.player?.pause();
+        
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
         let epubURL = documentsDirectory.appendingPathComponent("/\(book.fileName)");
         do {
@@ -164,6 +173,12 @@ struct SelectionView: View {
             // Remove book from defaults
             modelContext.delete(book);
             
+        }
+        do {
+            try modelContext.save()
+            modelContext.processPendingChanges()
+        } catch {
+            print("Error saving context: \(error)")
         }
     }
     

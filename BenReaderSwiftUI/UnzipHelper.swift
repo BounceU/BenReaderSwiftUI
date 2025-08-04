@@ -45,6 +45,7 @@ class UnzipHelper {
             print("Error unzipping file: \(error)");
             completion(nil);
         }
+        
         zipURL.stopAccessingSecurityScopedResource()
     }
     

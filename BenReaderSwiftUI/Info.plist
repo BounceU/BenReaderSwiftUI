@@ -13,5 +13,21 @@
 		<key>UIImageName</key>
 		<string>launch-logo</string>
 	</dict>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeDescription</key>
+			<string>BenReader File</string>
+			<key>UTTypeIconFiles</key>
+			<array/>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>.benr</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

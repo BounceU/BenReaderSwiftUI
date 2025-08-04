@@ -19,7 +19,6 @@ final class Book: ObservableObject {
     var location: TimeInterval;
     var lastOpened: Date;
     var rate: Float;
-    var bookmarks: [TimeInterval];
     
     init(title: String = "Default Title", author: String = "John Doe", image: String = "default_cover") {
         self.title = title;
@@ -29,7 +28,6 @@ final class Book: ObservableObject {
         self.location = TimeInterval(0);
         self.lastOpened = Date.now;
         self.rate = 1.0;
-        self.bookmarks = []
     }
     
     init(fileName: String) {
@@ -43,6 +41,5 @@ final class Book: ObservableObject {
         self.author = "";
         self.location = TimeInterval(0);
         self.lastOpened = Date.now;
-        self.bookmarks = []
     }
 }
