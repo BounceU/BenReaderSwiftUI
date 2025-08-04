@@ -13,6 +13,7 @@ struct BenReaderSwiftUIApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Book.self,
+            ReaderStyle.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 

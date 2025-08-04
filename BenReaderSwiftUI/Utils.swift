@@ -23,7 +23,7 @@ public class Utils {
             fileData.enumerateLines { (line, _) in
                 lines.append(line);
             }
-            print("Got lines: \(fileData)")
+          // print("Got lines: \(fileData)")
             
             var chapters: [Chapter] = []
             
@@ -46,10 +46,10 @@ public class Utils {
                     if let timestamp = Utils.parseDate(String(timeString)) {
                         chapterTimes.append(timestamp)
                     } else {
-                   //     print("Couldn't parse timestamp: \(timeString)")
+                   //   // print("Couldn't parse timestamp: \(timeString)")
                     }
                 } else {
-                    print("Line not conforming to specification");
+                  // print("Line not conforming to specification");
                 }
             }
             
@@ -74,7 +74,7 @@ public class Utils {
                     }
                 }
                 
-                print("Giving chapter path: \(i >= epubParser.chapterPaths.count ? "" : epubParser.chapterPaths[i])");
+              // print("Giving chapter path: \(i >= epubParser.chapterPaths.count ? "" : epubParser.chapterPaths[i])");
                 
                 let newChapter = Chapter(chapterTitle: i >= epubParser.chapterTitles.count ? "" : epubParser.chapterTitles[i], startTime: startTime, endTime: endTime, paragraphs: chapterParagraphs, chapterPath: i >= epubParser.chapterPaths.count ? "" : epubParser.chapterPaths[i])
                 chapters.append(newChapter);
@@ -86,7 +86,7 @@ public class Utils {
             
         } else {
             
-            print("COULDNT OPEN FILE LINES")
+          // print("COULDNT OPEN FILE LINES")
             return []
         }
         
@@ -99,7 +99,7 @@ public class Utils {
     static func getAudioURL(_ bookName: String) -> URL? {
 
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("Error: Could not get Documents directory URL")
+          // print("Error: Could not get Documents directory URL")
             return nil
         }
 
@@ -108,8 +108,8 @@ public class Utils {
         let jsonResult = try? JSONSerialization.jsonObject(with: data!, options: .mutableLeaves)
         var fileURL = documentsDirectory.appendingPathComponent("/\(bookName)/\(bookName).m4a");
         if let jsonResult = jsonResult as? Dictionary<String, AnyObject> {
-            print("Got JSON: \(jsonResult)")
-            print("Audio file: \(jsonResult["audio_file"])")
+          // print("Got JSON: \(jsonResult)")
+          // print("Audio file: \(jsonResult["audio_file"])")
             fileURL = documentsDirectory.appendingPathComponent("/\(bookName)/\(jsonResult["audio_file"]! as! String)");
         
         }
@@ -123,7 +123,7 @@ public class Utils {
 
         // 1. Get the Documents directory URL
         guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
-            print("Error: Could not get Documents directory URL")
+          // print("Error: Could not get Documents directory URL")
             return nil
         }
 
@@ -133,13 +133,13 @@ public class Utils {
         let jsonResult = try? JSONSerialization.jsonObject(with: data!, options: .mutableLeaves)
         var fileURL = documentsDirectory.appendingPathComponent("\(bookName)/\(bookName).txt");
         if let jsonResult = jsonResult as? Dictionary<String, AnyObject> {
-            print("Got JSON: \(jsonResult)")
-            print("Timing file: \(jsonResult["timing_file"])")
+          // print("Got JSON: \(jsonResult)")
+          // print("Timing file: \(jsonResult["timing_file"])")
             fileURL = documentsDirectory.appendingPathComponent("\(bookName)/\(jsonResult["timing_file"]! as! String)");
         }
         
 
-        print("GOT TIMESTAMPS URL::: \(fileURL)")
+      // print("GOT TIMESTAMPS URL::: \(fileURL)")
         
         return fileURL
     }
@@ -150,12 +150,12 @@ public class Utils {
         
 //        guard let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
 //            
-//            print("Error: Could not get Documents directory URL");
+//          // print("Error: Could not get Documents directory URL");
 //            return nil;
 //        }
 //        
 //        guard let enumerator = FileManager.default.enumerator(at: documentsDirectory.appendingPathComponent("\(bookName)"), includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else {
-//            print("Can't get URLS from enumerator");
+//          // print("Can't get URLS from enumerator");
 //            return nil;
 //        }
 //        
@@ -166,7 +166,7 @@ public class Utils {
 //            }
 //        }
 //        
-//        print("Error: Couldn't find cover");
+//      // print("Error: Couldn't find cover");
 //         
 //         return nil;
          
@@ -174,7 +174,7 @@ public class Utils {
         let epubParser = EpubParser(epubDirectory: documentsDirectory.appendingPathComponent("\(bookName)/"));
         epubParser.initializeData();
         let coverURL = epubParser.getCover()?.relativePath(from: documentsDirectory)
-        print("COVER URL WHATEVER: \(coverURL ?? "NIL")")
+      // print("COVER URL WHATEVER: \(coverURL ?? "NIL")")
         return coverURL;
         
     }
@@ -191,26 +191,26 @@ public class Utils {
     
     static func processSelectedFile(url: URL, books: [Book]) -> Book? {
         
-        print("given URL: \(url)");
+      // print("given URL: \(url)");
         
         if url.pathExtension != "benr" {
             return nil
         }
         
         let epubName = (url.lastPathComponent as NSString).deletingPathExtension;
-        print("EPUB name: \(epubName)");
+      // print("EPUB name: \(epubName)");
         for b in books {
             if b.fileName == epubName {
                 return nil;
             }
         }
         
-        print("Okay, the url is \(url)")
+      // print("Okay, the url is \(url)")
         
         UnzipHelper.unzipZip(zipURL: url) { unzipDirectory in
-            print("unzipped directory: \(String(describing: unzipDirectory))");
+          // print("unzipped directory: \(String(describing: unzipDirectory))");
             guard let _ = unzipDirectory else {
-                print("error unizzping file");
+              // print("error unizzping file");
                 return;
             }
             let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
@@ -220,16 +220,16 @@ public class Utils {
             let jsonResult = try? JSONSerialization.jsonObject(with: data!, options: .mutableLeaves)
             var epubURL = documentsDirectory.appendingPathComponent("/\(epubName)/\(epubName).epub");
             if let jsonResult = jsonResult as? Dictionary<String, AnyObject> {
-                print("Got JSON: \(jsonResult)")
-                print("Book file: \(jsonResult["book_file"])")
+              // print("Got JSON: \(jsonResult)")
+              // print("Book file: \(jsonResult["book_file"])")
                 epubURL = documentsDirectory.appendingPathComponent("/\(epubName)/\(jsonResult["book_file"]! as! String)");
-                print("Got new epub url: \(epubURL)")
+              // print("Got new epub url: \(epubURL)")
             
             }
             if FileManager.default.fileExists(atPath: epubURL.path) {
                 UnzipHelper.unzipEPUB(epubURL: epubURL, unzipDirectory: documentsDirectory.appendingPathComponent("\(epubName)")) { unzipDirectory in
                     guard let  _ = unzipDirectory else {
-                        print("error unizzping epub after unzipping zip.");
+                      // print("error unizzping epub after unzipping zip.");
                         return;
                     }
                     
@@ -242,13 +242,13 @@ public class Utils {
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0];
         
         let newBook = Book(fileName: "\(epubName)");
-        print("Using file name \(newBook.fileName)")
+      // print("Using file name \(newBook.fileName)")
         let parser = getChapterInfo(book: newBook);
         newBook.title = parser.title;
         newBook.author = parser.author;
         
 //        epubParser.parseEpub(chapterNumber: 3) { url in
-//            print("url: \(url)");
+//          // print("url: \(url)");
 //        }
         
         

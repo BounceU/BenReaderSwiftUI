@@ -23,8 +23,16 @@ struct CardView: View {
             
             Text(book.title)
                 .font(.headline)
-            Text(book.author)
-                .font(.subheadline)
+            let chapters = Utils.loadChaptersFromBook(book)
+            if let lastChapter = chapters.last {
+               let elapsed = book.location / Double(lastChapter.endTime) * 100.0
+                Text("\(book.author) • \(String(format: "%.0f", elapsed))%")
+                        .font(.subheadline)
+            } else {
+                Text("\(book.author)")
+                    .font(.subheadline)
+            }
+            
         }
         
     }

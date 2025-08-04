@@ -10,11 +10,13 @@ import SwiftUI
 import AVFAudio
 import MediaPlayer
 import WebKit
+import SwiftData
 
 struct AudioPlayerView: View {
     
     @Environment(\.self) var environment
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) var modelContext
     
     @State var isPlaying: Bool = true;
     @State var progress: Double = 0.0
@@ -42,12 +44,7 @@ struct AudioPlayerView: View {
     var formatter: DateComponentsFormatter;
     var otherFormatter: DateComponentsFormatter;
     
-    @State var color1: UIColor = UIColor.systemBackground
-    @State var color2: UIColor = UIColor.label
-    @State var hicol: String = "darkgreen"
-    @State var fontSize: CGFloat = 20
-    @State var spacing: CGFloat = 8
-    @State var sides: CGFloat = 4
+    
     @State var showStyles: Bool = false;
     @State var showSpacing: Bool = false;
     @State var showSizes: Bool = false;
@@ -63,29 +60,31 @@ struct AudioPlayerView: View {
         self.otherFormatter = DateComponentsFormatter();
         self.minValue = currentChapter.startTime;
         self.maxValue = currentChapter.endTime;
-               
+        
         
         formatter.allowedUnits = [ .minute, .second, .nanosecond]
-         formatter.unitsStyle = .positional
-         formatter.zeroFormattingBehavior = .pad
+        formatter.unitsStyle = .positional
+        formatter.zeroFormattingBehavior = .pad
         
         otherFormatter.allowedUnits = [ .hour, .minute];
         otherFormatter.unitsStyle = .abbreviated;
         otherFormatter.zeroFormattingBehavior = .default;
-   
         
         
     }
     
     var body: some View {
         
+        
         NavigationStack {
             VStack {
                 
+                let style = ReaderStyle.getSharedInstance(modelContext: modelContext)
+                
                 if(showText) {
                     
-                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [color1.toHexString(), color2.toHexString()], highlightColor: self.hicol, fontSize: self.fontSize, spacing: self.spacing, sides: self.sides, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
-                        
+                    WebView(url: Utils.getChapterURL(book, currentChapter)!, colors: [style.backgroundColor.toHexString(), style.textColor.toHexString()], highlightColor: style.hilightColor, fontSize: style.fontSize, spacing: style.spacing, sides: style.sides, webCoord: webCoord ).ignoresSafeArea().navigationTitle("").mask(LinearGradient(gradient: Gradient(colors: [ .clear, .black, .black, .black, .black, .black, .black, .black, .black, .clear]), startPoint: .top, endPoint: .bottom).ignoresSafeArea())
+                    
                     
                 } else {
                     
@@ -152,8 +151,8 @@ struct AudioPlayerView: View {
                                     }
                                 }
                                 
-//                                .presentationDetents([.medium])
-//                                .presentationDragIndicator(.visible)
+                                //                                .presentationDetents([.medium])
+                                //                                .presentationDragIndicator(.visible)
                             }
                         }
                     
@@ -161,7 +160,7 @@ struct AudioPlayerView: View {
                 }
                 // MARK: - Progress Bar
                 
-            
+                
                 
                 Slider(value: $progress, in: $currentChapter.startTime.wrappedValue...$currentChapter.endTime.wrappedValue, onEditingChanged: {
                     (scrubStarted) in
@@ -171,7 +170,7 @@ struct AudioPlayerView: View {
                         self.player.scrubState = .scrubEnded(progress)
                     }
                 }) .padding([.leading, .trailing], showText ? 30 : 50).shadow(color: .secondary, radius: 5).controlSize(.small).tint(.primary)
-               
+                
                 
                 if(!showText) {
                     HStack {
@@ -261,7 +260,7 @@ struct AudioPlayerView: View {
                             ScrollView {
                                 VStack {
                                     ForEach(5...30, id: \.self) { speed in
-
+                                        
                                         Button(action: {
                                             if let audioPlayer = player.player {
                                                 book.rate = Float(speed) / 10.0
@@ -270,21 +269,21 @@ struct AudioPlayerView: View {
                                                 
                                             }
                                             showSpeeds = false;
-                                        
-                                    }) {
-                                        
-                                        Text("\(String(format: "%.1f", Double(speed) / 10.0))x")
-                                        Spacer()
-                                        Text("Speed").foregroundStyle(.secondary)
-                                        
-                                    }.buttonStyle(.plain).padding()
-                                    Divider()
+                                            
+                                        }) {
+                                            
+                                            Text("\(String(format: "%.1f", Double(speed) / 10.0))x")
+                                            Spacer()
+                                            Text("Speed").foregroundStyle(.secondary)
+                                            
+                                        }.buttonStyle(.plain).padding()
+                                        Divider()
+                                    }
                                 }
+                                //                            .presentationDetents([.medium])
+                                //                            .presentationDragIndicator(.visible)
                             }
-//                            .presentationDetents([.medium])
-//                            .presentationDragIndicator(.visible)
                         }
-                    }
                     
                     Spacer()
                     
@@ -318,7 +317,7 @@ struct AudioPlayerView: View {
                             ScrollView {
                                 VStack {
                                     ForEach(0...12, id: \.self) { time in
-//
+                                        //
                                         Button(action: {
                                             if(time != 0) {
                                                 if player.player != nil {
@@ -330,22 +329,22 @@ struct AudioPlayerView: View {
                                             } else {
                                                 player.timerValue = nil
                                             }
-                                        player.play()
-                                        showTimers = false;
-                                        
-                                    }) {
-                                        
-                                        Text("\(time == 0 ? "Off" : "\(time * 10) minutes")")
-                                        Spacer()
-                                        
-                                    }.buttonStyle(.plain).padding()
-                                    Divider()
+                                            player.play()
+                                            showTimers = false;
+                                            
+                                        }) {
+                                            
+                                            Text("\(time == 0 ? "Off" : "\(time * 10) minutes")")
+                                            Spacer()
+                                            
+                                        }.buttonStyle(.plain).padding()
+                                        Divider()
+                                    }
                                 }
+                                //                            .presentationDetents([.medium])
+                                //                            .presentationDragIndicator(.visible)
                             }
-//                            .presentationDetents([.medium])
-//                            .presentationDragIndicator(.visible)
                         }
-                    }
                     
                     Spacer()
                 } .toolbar {
@@ -357,7 +356,7 @@ struct AudioPlayerView: View {
                         } label: {
                             ZStack {
                                 Image(systemName: "chevron.backward.circle.fill").resizable().frame(width: 30, height: 30)
-                                    .foregroundStyle(.primary)
+                                    .foregroundStyle(showText ? Color(.displayP3, red: style.textColor.red, green: style.textColor.green, blue: style.textColor.blue, opacity: style.textColor.alpha) : .primary)
                                 
                                 
                             }
@@ -373,10 +372,10 @@ struct AudioPlayerView: View {
                             } label: {
                                 Label("Auto Scroll", systemImage: "lines.measurement.vertical")
                             }
-                                
-                             
-                                
-                                // MARK: - Style
+                            
+                            
+                            
+                            // MARK: - Style
                             Button {
                                 withAnimation {
                                     showStyles.toggle();
@@ -390,33 +389,27 @@ struct AudioPlayerView: View {
                             }.menuActionDismissBehavior(.disabled)
                             Section(isExpanded: $showStyles, content: {
                                 Button {
-                                    color1 = UIColor.white
-                                    color2 = UIColor.black
-                                    hicol = "lightgreen"
+                                    style.light()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Light")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    color1 = UIColor.black
-                                    color2 = UIColor.white
-                                    hicol = "darkgreen"
+                                    style.dark()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Dark")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    color1 = UIColor(red: 0.984, green: 0.941, blue: 0.851, alpha: 1.0)
-                                    color2 = UIColor(red: 0.372, green: 0.294, blue: 0.196, alpha: 1.0)
-                                    hicol = "yellowgreen"
+                                    style.sepia()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
@@ -424,8 +417,8 @@ struct AudioPlayerView: View {
                                 }.menuActionDismissBehavior(.disabled)
                             }, header: {
                             })
-                                
-                                    // MARK: - Spacing
+                            
+                            // MARK: - Spacing
                             Button {
                                 withAnimation {
                                     showSpacing.toggle();
@@ -439,30 +432,27 @@ struct AudioPlayerView: View {
                             }.menuActionDismissBehavior(.disabled)
                             Section(isExpanded: $showSpacing, content: {
                                 Button {
-                                    spacing = 2
-                                    sides = 2
+                                    style.wide()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Wide")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    spacing = 8
-                                    sides = 4
+                                    style.normalSpacing()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Normal")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    spacing = 8
-                                    sides = 8
+                                    style.compact()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
@@ -471,7 +461,7 @@ struct AudioPlayerView: View {
                                 
                             }, header: {
                             })
-                                        
+                            
                             // MARK: - Size
                             Button {
                                 withAnimation {
@@ -486,42 +476,42 @@ struct AudioPlayerView: View {
                             }.menuActionDismissBehavior(.disabled)
                             Section(isExpanded: $showSizes, content: {
                                 Button {
-                                    fontSize = 12
+                                    style.small()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Small")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    fontSize = 20
+                                    style.normalSize()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Normal")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    fontSize = 28
+                                    style.largeSize()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Large")
                                 }.menuActionDismissBehavior(.disabled)
                                 Button {
-                                    fontSize = 36
+                                    style.giantSize()
                                     if let web = webCoord.webview {
-                                        web.evaluateJavaScript("refreshCSS(\"\(color1.toHexString())\", \"\(color1.toHexString())\", \(sides), \(spacing), \(fontSize), \(hicol));");
+                                        web.evaluateJavaScript(style.getJS());
                                         currentParagraph = 0;
                                     }
                                 } label: {
                                     Text("Very Large")
                                 }.menuActionDismissBehavior(.disabled)
-
+                                
                             }, header: {})
                             // MARK: - Cursor Offset
                             ControlGroup {
@@ -538,9 +528,9 @@ struct AudioPlayerView: View {
                                 }.menuActionDismissBehavior(.disabled)
                             }
                         } label: {
-                            Image(systemName: "line.horizontal.3.circle.fill").resizable().frame(width: 30, height: 30).foregroundStyle(.primary)
+                            Image(systemName: "line.horizontal.3.circle.fill").resizable().frame(width: 30, height: 30).foregroundStyle(showText ? Color(.displayP3, red: style.textColor.red, green: style.textColor.green, blue: style.textColor.blue, opacity: style.textColor.alpha) : .primary)
                             
-                      
+                            
                             
                         }.listStyle(.sidebar)
                     }
@@ -551,7 +541,7 @@ struct AudioPlayerView: View {
             // MARK: - Navigation Title
             
             .navigationTitle(Text("\(book.title)")).navigationBarTitleDisplayMode(.inline)
-           
+            
             .background {
                 AsyncImage(url: FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first?.appendingPathComponent(book.image)) { image in
                     image.resizable()
@@ -581,26 +571,28 @@ struct AudioPlayerView: View {
     }
     
     
-
+    
     // MARK: - Time Observer for Progress Bar
     
     func addPeriodicTimeObserver() {
         // Invoke callback every half second
-        let interval = CMTime(seconds: 0.2,
-                              preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        let interval = CMTime(seconds: 0.5,
+                              preferredTimescale: CMTimeScale(MSEC_PER_SEC))
         // Add time observer. Invoke closure on the main queue.
         timeObserver =
         player.player?.addPeriodicTimeObserver(forInterval: interval, queue: .main) {
-                 time in
+            time in
+            
             switch(player.scrubState) {
-                case .reset:
-                    progress = time.seconds
-                    break;
-                case .scrubStarted:
-                    break;
-                case .scrubEnded(_):
-                    break;
+            case .reset:
+                progress = time.seconds
+                break;
+            case .scrubStarted:
+                break;
+            case .scrubEnded(_):
+                break;
             }
+            
             if let playerSecs = player.player?.currentItem?.duration.seconds {
                 if(playerSecs.isNaN) {
                     remainingDuration = 0
@@ -614,7 +606,7 @@ struct AudioPlayerView: View {
             isPlaying = player.getIsPlaying()
             book.location = time.seconds
             
-           
+            
             if let playerChap = player.currentChapter {
                 if currentChapter.startTime != playerChap.startTime {
                     cursorOffset = 0
@@ -628,16 +620,19 @@ struct AudioPlayerView: View {
                 if let web = webCoord.webview {
                     web.evaluateJavaScript(" resetBody();");
                     web.evaluateJavaScript(" highlightNthSentence(\(currentParagraph + cursorOffset));");
-                  
+                    
                     if(shouldScroll) {
                         web.evaluateJavaScript(" scrollToClass(\"highlight\");");
                     }
-                      
+                    
                 }
                 
             }
             
+            
         }
+        
+        
     }
     
     
@@ -671,7 +666,7 @@ struct AudioPlayerView: View {
             player.prevChapter()
             return .success
         }
-       
+        
         commands.skipForwardCommand.addTarget { _ in
             player.skip(30)
             return .success
@@ -689,23 +684,23 @@ struct AudioPlayerView: View {
         
     }
     
-
+    
 }
 
 extension UIColor {
-       func toHexString() -> String {
-           var r:CGFloat = 0
-           var g:CGFloat = 0
-           var b:CGFloat = 0
-           var a:CGFloat = 0
-
-           getRed(&r, green: &g, blue: &b, alpha: &a)
-
-           let rgb:Int = (Int)(r*255)<<16 | (Int)(g*255)<<8 | (Int)(b*255)<<0
-
-           return String(format:"#%06x", rgb)
-       }
-   }
+    func toHexString() -> String {
+        var r:CGFloat = 0
+        var g:CGFloat = 0
+        var b:CGFloat = 0
+        var a:CGFloat = 0
+        
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+        
+        let rgb:Int = (Int)(r*255)<<16 | (Int)(g*255)<<8 | (Int)(b*255)<<0
+        
+        return String(format:"#%06x", rgb)
+    }
+}
 
 #Preview {
     AudioPlayerView(book: Book())

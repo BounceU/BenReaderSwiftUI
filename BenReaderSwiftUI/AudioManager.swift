@@ -59,7 +59,7 @@ class AudioManager: ObservableObject {
             return otherChap.chapterPath == currentChapter.chapterPath
         }) {
             if (chapterNum != chapters.count - 1) {
-                player.seek(to: .init(seconds: chapters[chapterNum + 1].startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
+                player.seek(to: .init(seconds: chapters[chapterNum + 1].startTime + 0.01, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
             } else {
                 player.seek(to: .init(seconds: currentChapter.endTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
             }
@@ -79,12 +79,12 @@ class AudioManager: ObservableObject {
         }) {
            
             if(abs(player.currentTime().seconds.distance(to: currentChapter.startTime)) < 3.0 && chapterNum != 0) {
-                player.seek(to: .init(seconds: chapters[chapterNum - 1].startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
+                player.seek(to: .init(seconds: chapters[chapterNum - 1].startTime + 0.01, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
             } else {
-                player.seek(to: .init(seconds: currentChapter.startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
+                player.seek(to: .init(seconds: currentChapter.startTime + 0.01, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
             }
         } else {
-            player.seek(to: .init(seconds: currentChapter.startTime, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
+            player.seek(to: .init(seconds: currentChapter.startTime + 0.01, preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero)
         }
         trackUpdate();
     }
