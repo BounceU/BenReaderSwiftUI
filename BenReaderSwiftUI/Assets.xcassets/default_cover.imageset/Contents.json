@@ -1,7 +1,7 @@
 {
   "images" : [
     {
-      "filename" : "book.png",
+      "filename" : "default_cover.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
